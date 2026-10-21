@@ -33,5 +33,6 @@ dependencies {
     implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
 
     implementation("com.google.mediapipe:tasks-vision:0.10.20")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 }
 

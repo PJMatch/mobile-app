@@ -37,6 +37,7 @@ import androidx.core.content.ContextCompat
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 class AiTranslatorActivity : AppCompatActivity() {
 
@@ -50,21 +51,17 @@ class AiTranslatorActivity : AppCompatActivity() {
     private val cameraExecutor = Executors.newSingleThreadExecutor()
 
     private var landmarkExtractor: PjmLandmarkExtractor? = null
+    private var signClassifier: PjmSignClassifier? = null
+    private val recognitionExecutor = Executors.newSingleThreadExecutor()
+
+    private enum class TranslationState { IDLE, RECORDING, RECOGNIZING }
+
+    private var translationState = TranslationState.IDLE
 
     @Volatile
-    var latestModelFrame: Array<FloatArray>? = null
-        private set
+    private var activeRecording: PjmSignRecording? = null
 
-    private var currentSignIndex = 0
-
-    private val recognizedSigns = listOf(
-        Pair("Dzień dobry", "96%"),
-        Pair("Dziękuję", "98%"),
-        Pair("Jak się masz?", "94%"),
-        Pair("Cześć", "97%"),
-        Pair("Do widzenia", "95%"),
-    )
-
+    private lateinit var translateButton: Button
     private lateinit var resultText: TextView
     private lateinit var confidenceText: TextView
     private lateinit var progressFillView: View
@@ -325,8 +322,8 @@ class AiTranslatorActivity : AppCompatActivity() {
             cornerRadius = dpToPx(this@AiTranslatorActivity, 28).toFloat()
         }
 
-        val translateButton = Button(this).apply {
-            text = "⛶  Rozpocznij tłumaczenie"
+        translateButton = Button(this).apply {
+            text = "●  Nagraj znak"
             textSize = 16f
             setTextColor(Color.WHITE)
             background = translateButtonBg
@@ -339,7 +336,7 @@ class AiTranslatorActivity : AppCompatActivity() {
                 bottomMargin = 28
             }
             setOnClickListener {
-                cycleNextRecognizedSign()
+                onTranslateButtonClicked()
             }
         }
         rootLayout.addView(translateButton)
@@ -385,7 +382,7 @@ class AiTranslatorActivity : AppCompatActivity() {
         }
 
         val exampleBadge = TextView(this).apply {
-            text = "Przykład"
+            text = "Offline"
             textSize = 12f
             setTextColor(Color.parseColor("#D3821C"))
             setTypeface(null, Typeface.BOLD)
@@ -398,7 +395,7 @@ class AiTranslatorActivity : AppCompatActivity() {
 
         // Recognized text
         resultText = TextView(this).apply {
-            text = "Rozpoznano: ${recognizedSigns[0].first}"
+            text = "Rozpoznano: —"
             textSize = 20f
             setTextColor(Color.parseColor("#1C1635"))
             setTypeface(null, Typeface.BOLD)
@@ -420,7 +417,7 @@ class AiTranslatorActivity : AppCompatActivity() {
         }
 
         confidenceText = TextView(this).apply {
-            text = recognizedSigns[0].second
+            text = "—"
             textSize = 14f
             setTextColor(Color.parseColor("#D3821C"))
             setTypeface(null, Typeface.BOLD)
@@ -439,6 +436,7 @@ class AiTranslatorActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             background = progressTrackBg
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 16)
+            weightSum = 1f
         }
 
         val progressFillBg = GradientDrawable().apply {
@@ -448,7 +446,7 @@ class AiTranslatorActivity : AppCompatActivity() {
 
         progressFillView = View(this).apply {
             background = progressFillBg
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.96f)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0f)
         }
 
         progressTrack.addView(progressFillView)
@@ -561,15 +559,25 @@ class AiTranslatorActivity : AppCompatActivity() {
 
         setContentView(mainContainer)
 
+        setupSignRecognition()
         setupMediaPipe()
         checkAndStartCamera()
+    }
+
+    private fun setupSignRecognition() {
+        try {
+            signClassifier = PjmSignClassifier(this, signs)
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            Toast.makeText(this, "Nie udało się wczytać modelu PJM", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun setupMediaPipe() {
         try {
             landmarkExtractor = PjmLandmarkExtractor(this) { skeleton ->
-                latestModelFrame = skeleton.toModelFrame()
                 skeletonOverlayView.setSkeleton(skeleton)
+                activeRecording?.add(skeleton.timestampMs, skeleton.toModelFrame())
             }
         } catch (t: Throwable) {
             t.printStackTrace()
@@ -577,18 +585,68 @@ class AiTranslatorActivity : AppCompatActivity() {
         }
     }
 
-    private fun cycleNextRecognizedSign() {
-        currentSignIndex = (currentSignIndex + 1) % recognizedSigns.size
-        val (sign, confidence) = recognizedSigns[currentSignIndex]
-        resultText.text = "Rozpoznano: $sign"
-        confidenceText.text = confidence
+    private fun onTranslateButtonClicked() {
+        when (translationState) {
+            TranslationState.IDLE -> startRecording()
+            TranslationState.RECORDING -> stopRecordingAndRecognize()
+            TranslationState.RECOGNIZING -> Unit
+        }
+    }
 
-        val percentFloat = confidence.replace("%", "").toFloatOrNull()?.div(100f) ?: 0.95f
-        progressFillView.layoutParams = (progressFillView.layoutParams as LinearLayout.LayoutParams).apply {
-            weight = percentFloat
+    private fun startRecording() {
+        if (signClassifier == null || landmarkExtractor == null) {
+            Toast.makeText(this, "Tłumacz jest niedostępny na tym urządzeniu", Toast.LENGTH_SHORT).show()
+            return
+        }
+        activeRecording = PjmSignRecording()
+        setTranslationState(TranslationState.RECORDING)
+    }
+
+    private fun stopRecordingAndRecognize() {
+        val recording = activeRecording ?: return
+        activeRecording = null
+        val clip = recording.resampledToTrainingFps().take(PjmSignClassifier.MAX_FRAMES)
+        if (clip.size < PjmSignClassifier.MIN_FRAMES) {
+            Toast.makeText(this, "Nagranie jest za krótkie", Toast.LENGTH_SHORT).show()
+            setTranslationState(TranslationState.IDLE)
+            return
         }
 
-        Toast.makeText(this, "Aanalizowano kadr z kamery", Toast.LENGTH_SHORT).show()
+        val classifier = signClassifier ?: return
+        setTranslationState(TranslationState.RECOGNIZING)
+        recognitionExecutor.execute {
+            val prediction = runCatching { classifier.classify(clip) }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                prediction
+                    .onSuccess { showRecognizedSign(it) }
+                    .onFailure {
+                        it.printStackTrace()
+                        Toast.makeText(this, "Błąd rozpoznawania znaku", Toast.LENGTH_SHORT).show()
+                    }
+                setTranslationState(TranslationState.IDLE)
+            }
+        }
+    }
+
+    private fun setTranslationState(state: TranslationState) {
+        translationState = state
+        translateButton.isEnabled = state != TranslationState.RECOGNIZING
+        translateButton.text = when (state) {
+            TranslationState.IDLE -> "●  Nagraj znak"
+            TranslationState.RECORDING -> "■  Zakończ i rozpoznaj"
+            TranslationState.RECOGNIZING -> "Rozpoznawanie…"
+        }
+    }
+
+    private fun showRecognizedSign(prediction: SignPrediction) {
+        val recognized = prediction.gloss != PjmSignClassifier.BLANK_GLOSS
+        val confidence = if (recognized) prediction.confidence else 0f
+        resultText.text = if (recognized) "Rozpoznano: ${prediction.gloss}" else "Nie rozpoznano znaku"
+        confidenceText.text = if (recognized) "${(confidence * 100).roundToInt()}%" else "—"
+        progressFillView.layoutParams = (progressFillView.layoutParams as LinearLayout.LayoutParams).apply {
+            weight = confidence
+        }
     }
 
     private fun checkAndStartCamera() {
@@ -697,6 +755,9 @@ class AiTranslatorActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
         cameraExecutor.awaitTermination(500, TimeUnit.MILLISECONDS)
         landmarkExtractor?.close()
+        recognitionExecutor.shutdown()
+        recognitionExecutor.awaitTermination(2, TimeUnit.SECONDS)
+        signClassifier?.close()
     }
 
     private fun dpToPx(context: Context, dp: Int): Int {
