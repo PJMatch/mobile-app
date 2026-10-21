@@ -400,7 +400,7 @@ class MainActivity : Activity() {
                 marginEnd = 12
             }
             setOnClickListener {
-                startActivity(Intent(this@MainActivity, SignListActivity::class.java))
+                startActivity(Intent(this@MainActivity, AiTranslatorActivity::class.java))
             }
         }
 
@@ -522,7 +522,7 @@ class MainActivity : Activity() {
             startActivity(Intent(this, SignListActivity::class.java))
         }
         val navAi = createNavItem("📷", "Tłumacz AI", false) {
-            startActivity(Intent(this, SignListActivity::class.java))
+            startActivity(Intent(this, AiTranslatorActivity::class.java))
         }
         val navStats = createNavItem("📊", "Statystyki", false) {
             Toast.makeText(this, "Statystyki w przygotowaniu", Toast.LENGTH_SHORT).show()
