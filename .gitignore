@@ -1,6 +1,5 @@
 *.iml
 .gradle
-gradle
 build/
 captures/
 .externalNativeBuild
