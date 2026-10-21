@@ -34,13 +34,9 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
-import com.google.mediapipe.tasks.core.BaseOptions
-import com.google.mediapipe.tasks.vision.core.RunningMode
-import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
-import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class AiTranslatorActivity : AppCompatActivity() {
 
@@ -53,8 +49,11 @@ class AiTranslatorActivity : AppCompatActivity() {
     private var imageAnalysis: ImageAnalysis? = null
     private val cameraExecutor = Executors.newSingleThreadExecutor()
 
-    private var poseLandmarker: PoseLandmarker? = null
-    private var handLandmarker: HandLandmarker? = null
+    private var landmarkExtractor: PjmLandmarkExtractor? = null
+
+    @Volatile
+    var latestModelFrame: Array<FloatArray>? = null
+        private set
 
     private var currentSignIndex = 0
 
@@ -568,46 +567,13 @@ class AiTranslatorActivity : AppCompatActivity() {
 
     private fun setupMediaPipe() {
         try {
-            val poseBaseOptions = BaseOptions.builder()
-                .setModelAssetPath("pose_landmarker_lite.task")
-                .build()
-
-            val poseOptions = PoseLandmarker.PoseLandmarkerOptions.builder()
-                .setBaseOptions(poseBaseOptions)
-                .setRunningMode(RunningMode.LIVE_STREAM)
-                .setResultListener { result, _ ->
-                    runOnUiThread {
-                        skeletonOverlayView.setPoseLandmarks(result.landmarks())
-                    }
-                }
-                .setErrorListener { error ->
-                    error.printStackTrace()
-                }
-                .build()
-
-            poseLandmarker = PoseLandmarker.createFromOptions(this, poseOptions)
-
-            val handBaseOptions = BaseOptions.builder()
-                .setModelAssetPath("hand_landmarker.task")
-                .build()
-
-            val handOptions = HandLandmarker.HandLandmarkerOptions.builder()
-                .setBaseOptions(handBaseOptions)
-                .setRunningMode(RunningMode.LIVE_STREAM)
-                .setNumHands(2)
-                .setResultListener { result, _ ->
-                    runOnUiThread {
-                        skeletonOverlayView.setHandLandmarks(result.landmarks())
-                    }
-                }
-                .setErrorListener { error ->
-                    error.printStackTrace()
-                }
-                .build()
-
-            handLandmarker = HandLandmarker.createFromOptions(this, handOptions)
-        } catch (e: Exception) {
-            e.printStackTrace()
+            landmarkExtractor = PjmLandmarkExtractor(this) { skeleton ->
+                latestModelFrame = skeleton.toModelFrame()
+                skeletonOverlayView.setSkeleton(skeleton)
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            Toast.makeText(this, "MediaPipe niedostępne na tym urządzeniu", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -697,28 +663,18 @@ class AiTranslatorActivity : AppCompatActivity() {
 
     @OptIn(ExperimentalGetImage::class)
     private fun processImageProxy(imageProxy: ImageProxy) {
-        val frameTime = SystemClock.uptimeMillis()
-        val bitmap = imageProxy.toBitmap()
-
-        val isFront = (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA)
-        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-
-        val matrix = Matrix().apply {
-            postRotate(rotationDegrees.toFloat())
-            if (isFront) {
-                postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
-            }
-        }
-
-        val rotatedBitmap = Bitmap.createBitmap(
-            bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
-        )
-
-        val mpImage = BitmapImageBuilder(rotatedBitmap).build()
-
         try {
-            poseLandmarker?.detectAsync(mpImage, frameTime)
-            handLandmarker?.detectAsync(mpImage, frameTime)
+            val bitmap = imageProxy.toBitmap()
+            val matrix = Matrix().apply { postRotate(imageProxy.imageInfo.rotationDegrees.toFloat()) }
+            val uprightBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+
+            skeletonOverlayView.setImageInfo(
+                uprightBitmap.width,
+                uprightBitmap.height,
+                mirror = cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA
+            )
+
+            landmarkExtractor?.detectAsync(uprightBitmap, SystemClock.uptimeMillis())
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
@@ -737,9 +693,10 @@ class AiTranslatorActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        cameraProvider?.unbindAll()
         cameraExecutor.shutdown()
-        poseLandmarker?.close()
-        handLandmarker?.close()
+        cameraExecutor.awaitTermination(500, TimeUnit.MILLISECONDS)
+        landmarkExtractor?.close()
     }
 
     private fun dpToPx(context: Context, dp: Int): Int {
@@ -751,8 +708,17 @@ class AiTranslatorActivity : AppCompatActivity() {
      */
     private inner class SkeletonOverlayView(context: Context) : View(context) {
 
-        private var poseLandmarksList: List<List<NormalizedLandmark>>? = null
-        private var handLandmarksList: List<List<NormalizedLandmark>>? = null
+        @Volatile private var pose: List<NormalizedLandmark> = emptyList()
+        @Volatile private var face: List<NormalizedLandmark> = emptyList()
+        @Volatile private var hands: List<List<NormalizedLandmark>> = emptyList()
+
+        @Volatile private var imageWidth = 0
+        @Volatile private var imageHeight = 0
+        @Volatile private var mirror = false
+
+        private var scale = 1f
+        private var offsetX = 0f
+        private var offsetY = 0f
 
         // Paint for Pose lines (Cyan `#00E5FF`)
         private val poseLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -793,15 +759,25 @@ class AiTranslatorActivity : AppCompatActivity() {
             strokeJoin = Paint.Join.ROUND
         }
 
-        fun setPoseLandmarks(landmarks: List<List<NormalizedLandmark>>) {
-            this.poseLandmarksList = landmarks
+        fun setImageInfo(width: Int, height: Int, mirror: Boolean) {
+            imageWidth = width
+            imageHeight = height
+            this.mirror = mirror
+        }
+
+        fun setSkeleton(skeleton: PjmSkeleton) {
+            pose = skeleton.pose
+            face = skeleton.face
+            hands = listOf(skeleton.leftHand, skeleton.rightHand).filter { it.isNotEmpty() }
             postInvalidate()
         }
 
-        fun setHandLandmarks(landmarks: List<List<NormalizedLandmark>>) {
-            this.handLandmarksList = landmarks
-            postInvalidate()
+        private fun px(lm: NormalizedLandmark): Float {
+            val x = if (mirror) 1f - lm.x() else lm.x()
+            return x * imageWidth * scale + offsetX
         }
+
+        private fun py(lm: NormalizedLandmark): Float = lm.y() * imageHeight * scale + offsetY
 
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
@@ -813,18 +789,19 @@ class AiTranslatorActivity : AppCompatActivity() {
             // 1. Always draw corner brackets framing
             drawCornerBrackets(canvas, w, h)
 
-            // 2. Draw Pose Skeleton if detected
-            poseLandmarksList?.forEach { pose ->
-                if (pose.size >= 33) {
-                    drawPoseSkeleton(canvas, pose, w, h)
-                }
-            }
+            if (imageWidth <= 0 || imageHeight <= 0) return
+            scale = maxOf(w / imageWidth, h / imageHeight)
+            offsetX = (w - imageWidth * scale) / 2f
+            offsetY = (h - imageHeight * scale) / 2f
 
-            // 3. Draw Hand Skeleton if detected
-            handLandmarksList?.forEach { hand ->
-                if (hand.size >= 21) {
-                    drawHandSkeleton(canvas, hand, w, h)
-                }
+            val pose = pose
+            if (pose.size >= PjmLandmarks.POSE_LEN) drawPoseSkeleton(canvas, pose)
+
+            val face = face
+            if (face.size >= PjmLandmarks.FACE_LEN) drawFacePoints(canvas, face)
+
+            hands.forEach { hand ->
+                if (hand.size >= PjmLandmarks.LH_LEN) drawHandSkeleton(canvas, hand)
             }
         }
 
@@ -871,46 +848,37 @@ class AiTranslatorActivity : AppCompatActivity() {
             canvas.drawPath(pathBR, bracketPaint)
         }
 
-        private fun drawPoseSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>, w: Float, h: Float) {
-            // Pose connections
+        private fun drawPoseSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>) {
             val poseConnections = listOf(
-                // Face / Head
-                Pair(0, 1), Pair(1, 2), Pair(2, 3), Pair(0, 4), Pair(4, 5), Pair(5, 6),
-                Pair(3, 7), Pair(6, 8), Pair(9, 10),
-                // Shoulders & Torso
                 Pair(11, 12), Pair(11, 23), Pair(12, 24), Pair(23, 24),
-                // Arms (Key for PJM sign language!)
-                Pair(11, 13), Pair(13, 15), Pair(15, 17), Pair(15, 19), Pair(15, 21),
-                Pair(12, 14), Pair(14, 16), Pair(16, 18), Pair(16, 20), Pair(16, 22),
-                // Legs
-                Pair(23, 25), Pair(25, 27), Pair(24, 26), Pair(26, 28)
+                Pair(11, 13), Pair(13, 15),
+                Pair(12, 14), Pair(14, 16),
             )
 
-            // Draw bone connections
             for ((startIdx, endIdx) in poseConnections) {
-                if (startIdx < landmarks.size && endIdx < landmarks.size) {
-                    val p1 = landmarks[startIdx]
-                    val p2 = landmarks[endIdx]
-
-                    val x1 = p1.x() * w
-                    val y1 = p1.y() * h
-                    val x2 = p2.x() * w
-                    val y2 = p2.y() * h
-
-                    canvas.drawLine(x1, y1, x2, y2, poseLinePaint)
-                }
+                val p1 = landmarks[startIdx]
+                val p2 = landmarks[endIdx]
+                canvas.drawLine(px(p1), py(p1), px(p2), py(p2), poseLinePaint)
             }
 
-            // Draw joint nodes
             val nodeRadius = dpToPx(context, 5).toFloat()
-            for (landmark in landmarks) {
-                val cx = landmark.x() * w
-                val cy = landmark.y() * h
-                canvas.drawCircle(cx, cy, nodeRadius, poseJointPaint)
+            for (idx in PjmLandmarks.BODY) {
+                val landmark = landmarks[idx]
+                canvas.drawCircle(px(landmark), py(landmark), nodeRadius, poseJointPaint)
             }
         }
 
-        private fun drawHandSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>, w: Float, h: Float) {
+        private fun drawFacePoints(canvas: Canvas, landmarks: List<NormalizedLandmark>) {
+            val nodeRadius = dpToPx(context, 2).toFloat()
+            for (idx in PjmLandmarks.FACE) {
+                canvas.drawCircle(px(landmarks[idx]), py(landmarks[idx]), nodeRadius, poseJointPaint)
+            }
+            for (idx in PjmLandmarks.MOUTH) {
+                canvas.drawCircle(px(landmarks[idx]), py(landmarks[idx]), nodeRadius, handJointPaint)
+            }
+        }
+
+        private fun drawHandSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>) {
             val handConnections = listOf(
                 // Thumb
                 Pair(0, 1), Pair(1, 2), Pair(2, 3), Pair(3, 4),
@@ -928,25 +896,15 @@ class AiTranslatorActivity : AppCompatActivity() {
 
             // Draw finger bones
             for ((startIdx, endIdx) in handConnections) {
-                if (startIdx < landmarks.size && endIdx < landmarks.size) {
-                    val p1 = landmarks[startIdx]
-                    val p2 = landmarks[endIdx]
-
-                    val x1 = p1.x() * w
-                    val y1 = p1.y() * h
-                    val x2 = p2.x() * w
-                    val y2 = p2.y() * h
-
-                    canvas.drawLine(x1, y1, x2, y2, handLinePaint)
-                }
+                val p1 = landmarks[startIdx]
+                val p2 = landmarks[endIdx]
+                canvas.drawLine(px(p1), py(p1), px(p2), py(p2), handLinePaint)
             }
 
             // Draw finger joint nodes
             val nodeRadius = dpToPx(context, 4).toFloat()
-            for (landmark in landmarks) {
-                val cx = landmark.x() * w
-                val cy = landmark.y() * h
-                canvas.drawCircle(cx, cy, nodeRadius, handJointPaint)
+            for (idx in PjmLandmarks.HAND) {
+                canvas.drawCircle(px(landmarks[idx]), py(landmarks[idx]), nodeRadius, handJointPaint)
             }
         }
     }
