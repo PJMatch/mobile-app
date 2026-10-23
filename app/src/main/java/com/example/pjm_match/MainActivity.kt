@@ -1,6 +1,7 @@
 package com.example.pjm_match
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -11,6 +12,9 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +46,7 @@ class MainActivity : Activity() {
             setPadding(40, 48, 40, 40)
         }
 
-        // Top Header: Date, Greeting, and Profile Avatar
+        // Top Header: System Date, Greeting, and Profile Avatar
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -54,8 +58,11 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
+        val dateFormat = SimpleDateFormat("EEEE, d MMMM", Locale.forLanguageTag("pl"))
+        val currentDateStr = dateFormat.format(Date()).uppercase(Locale.forLanguageTag("pl"))
+
         val dateTextView = TextView(this).apply {
-            text = "NIEDZIELA, 18 PAŹDZIERNIKA"
+            text = currentDateStr
             textSize = 12f
             setTextColor(Color.parseColor("#7E7A93"))
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -84,6 +91,9 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             background = avatarDrawable
             layoutParams = LinearLayout.LayoutParams(96, 96)
+            setOnClickListener {
+                Toast.makeText(this@MainActivity, "Profil w przygotowaniu", Toast.LENGTH_SHORT).show()
+            }
         }
 
         headerLayout.addView(textHeaderLayout)
@@ -476,7 +486,7 @@ class MainActivity : Activity() {
 
         scrollView.addView(rootLayout, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.MATCH_PARENT
+            LinearLayout.LayoutParams.WRAP_CONTENT
         ))
 
         // Bottom Navigation Bar matching start.png
@@ -528,7 +538,8 @@ class MainActivity : Activity() {
             Toast.makeText(this, "Statystyki w przygotowaniu", Toast.LENGTH_SHORT).show()
         }
         val navProfile = createNavItem("👤", "Profil", false) {
-            Toast.makeText(this, "Profil w przygotowaniu", Toast.LENGTH_SHORT).show()
+            // Also open profile dialog or toast
+            avatarTextView.performClick()
         }
 
         bottomNavLayout.addView(navStart)
