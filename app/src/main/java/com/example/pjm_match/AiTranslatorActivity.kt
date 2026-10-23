@@ -128,21 +128,7 @@ class AiTranslatorActivity : AppCompatActivity() {
         titleTextLayout.addView(subtitleTag)
         titleTextLayout.addView(mainTitle)
 
-        val topRightSparkleBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#EBE9FC"))
-            cornerRadius = 48f
-        }
-
-        val topRightSparkleBtn = TextView(this).apply {
-            text = "✨"
-            textSize = 20f
-            gravity = Gravity.CENTER
-            background = topRightSparkleBg
-            layoutParams = LinearLayout.LayoutParams(96, 96)
-        }
-
         headerLayout.addView(titleTextLayout)
-        headerLayout.addView(topRightSparkleBtn)
 
         val descriptionText = TextView(this).apply {
             text = "Pokaż znak do kamery. AI pomoże Ci odkryć jego znaczenie."
@@ -241,30 +227,6 @@ class AiTranslatorActivity : AppCompatActivity() {
             addView(grantBtn)
         }
         cameraCard.addView(permissionOverlayLayout)
-
-        // Top-Left Badge: "📷 PODGLĄD DEMONSTRACYJNY"
-        val demoBadgeBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#CC130C2E"))
-            cornerRadius = 32f
-        }
-
-        val demoBadge = TextView(this).apply {
-            text = "📷 PODGLĄD DEMONSTRACYJNY"
-            textSize = 10f
-            setTextColor(Color.WHITE)
-            setTypeface(null, Typeface.BOLD)
-            background = demoBadgeBg
-            setPadding(28, 16, 28, 16)
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.TOP or Gravity.START
-                topMargin = dpToPx(this@AiTranslatorActivity, 16)
-                marginStart = dpToPx(this@AiTranslatorActivity, 16)
-            }
-        }
-        cameraCard.addView(demoBadge)
 
         // Top-Right Button: Switch Camera (Front/Back)
         val switchCamBg = GradientDrawable().apply {
@@ -473,7 +435,7 @@ class AiTranslatorActivity : AppCompatActivity() {
         }
 
         val disclaimerText = TextView(this).apply {
-            text = "Przykładowy kadr i wynik. To podgląd działania, nie tłumaczenie na żywo. AI może się mylić."
+            text = "Model analizuje Twój ruch dłoni i rąk po rozpoczęciu nagrywania i rozpoczyna jego przetwarzanie. Upewnij się, że dłonie i sylwetka są dobrze oświetlone w kadrze."
             textSize = 12f
             setTextColor(Color.parseColor("#7E7A93"))
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
