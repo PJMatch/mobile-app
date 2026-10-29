@@ -21,7 +21,6 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
 
-        // Root container holding ScrollView and Bottom Navigation
         val mainContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#F5F5FA"))
@@ -31,7 +30,6 @@ class MainActivity : Activity() {
             )
         }
 
-        // Main ScrollView for scrollable content
         val scrollView = ScrollView(this).apply {
             isFillViewport = true
             layoutParams = LinearLayout.LayoutParams(
@@ -46,7 +44,6 @@ class MainActivity : Activity() {
             setPadding(40, 48, 40, 40)
         }
 
-        // Top Header: System Date, Greeting, and Profile Avatar
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -99,7 +96,6 @@ class MainActivity : Activity() {
         headerLayout.addView(textHeaderLayout)
         headerLayout.addView(avatarTextView)
 
-        // Top Stats Row (Streak & XP cards)
         val statsRowLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
@@ -108,7 +104,6 @@ class MainActivity : Activity() {
             ).apply { bottomMargin = 24 }
         }
 
-        // Streak Card (Orange/Yellow #FFEED6)
         val streakCardDrawable = GradientDrawable().apply {
             setColor(Color.parseColor("#FFEED6"))
             cornerRadius = 32f
@@ -152,7 +147,6 @@ class MainActivity : Activity() {
         streakCard.addView(streakIcon)
         streakCard.addView(streakTextLayout)
 
-        // XP Card (Lavender #EBE9FC)
         val xpCardDrawable = GradientDrawable().apply {
             setColor(Color.parseColor("#EBE9FC"))
             cornerRadius = 32f
@@ -199,7 +193,6 @@ class MainActivity : Activity() {
         statsRowLayout.addView(streakCard)
         statsRowLayout.addView(xpCard)
 
-        // Daily Goal Card (Twój dzienny cel)
         val whiteCardDrawable = GradientDrawable().apply {
             setColor(Color.WHITE)
             setStroke(2, Color.parseColor("#E4E2F0"))
@@ -274,7 +267,6 @@ class MainActivity : Activity() {
         goalCard.addView(progressBarTrack)
         goalCard.addView(goalSubtitle)
 
-        // Section Title: "Czas na kolejny gest"
         val sectionTitle = TextView(this).apply {
             text = "Czas na kolejny gest"
             textSize = 18f
@@ -283,7 +275,6 @@ class MainActivity : Activity() {
             setPadding(0, 0, 0, 16)
         }
 
-        // Main Learning Card (Dark Indigo #3B227A)
         val lessonCardDrawable = GradientDrawable().apply {
             setColor(Color.parseColor("#3B227A"))
             cornerRadius = 40f
@@ -393,7 +384,6 @@ class MainActivity : Activity() {
         lessonCard.addView(lessonTrack)
         lessonCard.addView(continueButton)
 
-        // Bottom Grid of Two Cards (Tłumacz miganie & Statystyki)
         val bottomGridRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
@@ -446,7 +436,7 @@ class MainActivity : Activity() {
                 marginStart = 12
             }
             setOnClickListener {
-                Toast.makeText(this@MainActivity, "Statystyki w przygotowaniu", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this@MainActivity, StatsActivity::class.java))
             }
         }
 
@@ -489,7 +479,6 @@ class MainActivity : Activity() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         ))
 
-        // Bottom Navigation Bar matching start.png
         val bottomNavLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -528,14 +517,14 @@ class MainActivity : Activity() {
         }
 
         val navStart = createNavItem("🏠", "Start", true) {}
-        val navNauka = createNavItem("🔀", "Nauka", false) {
+        val navLearn = createNavItem("🔀", "Nauka", false) {
             startActivity(Intent(this, SignListActivity::class.java))
         }
         val navAi = createNavItem("📷", "Tłumacz AI", false) {
             startActivity(Intent(this, AiTranslatorActivity::class.java))
         }
         val navStats = createNavItem("📊", "Statystyki", false) {
-            Toast.makeText(this, "Statystyki w przygotowaniu", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, StatsActivity::class.java))
         }
         val navProfile = createNavItem("👤", "Profil", false) {
             // Also open profile dialog or toast
@@ -543,12 +532,11 @@ class MainActivity : Activity() {
         }
 
         bottomNavLayout.addView(navStart)
-        bottomNavLayout.addView(navNauka)
+        bottomNavLayout.addView(navLearn)
         bottomNavLayout.addView(navAi)
         bottomNavLayout.addView(navStats)
         bottomNavLayout.addView(navProfile)
 
-        // Add ScrollView and Bottom Nav to main container
         mainContainer.addView(scrollView)
         mainContainer.addView(bottomNavLayout)
 
