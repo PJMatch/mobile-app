@@ -467,12 +467,35 @@ class MainActivity : Activity() {
         bottomGridRow.addView(translatorCard)
         bottomGridRow.addView(statsCard)
 
+        val debugButtonBg = GradientDrawable().apply {
+            setColor(Color.parseColor("#E8EAF9"))
+            setStroke(3, Color.parseColor("#2B2D91"))
+            cornerRadius = 32f
+        }
+
+        val debugButton = Button(this).apply {
+            text = "🛠️ DEBUG: Kamera z MediaPipe"
+            textSize = 14f
+            setTextColor(Color.parseColor("#2B2D91"))
+            background = debugButtonBg
+            setPadding(32, 28, 32, 28)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 16 }
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, MediaPipeDebugActivity::class.java))
+            }
+        }
+
         rootLayout.addView(headerLayout)
         rootLayout.addView(statsRowLayout)
         rootLayout.addView(goalCard)
         rootLayout.addView(sectionTitle)
         rootLayout.addView(lessonCard)
         rootLayout.addView(bottomGridRow)
+        rootLayout.addView(debugButton)
 
         scrollView.addView(rootLayout, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,

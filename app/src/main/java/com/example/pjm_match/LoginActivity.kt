@@ -18,20 +18,17 @@ class LoginActivity : Activity() {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
 
-        // ScrollView to support full content on smaller screens
         val scrollView = ScrollView(this).apply {
             setBackgroundColor(Color.WHITE)
             isFillViewport = true
         }
 
-        // Root container matching logowanie1.png
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(48, 80, 48, 64)
         }
 
-        // Top Brand Header (PJMMatch & Subtitle)
         val titleTextView = TextView(this).apply {
             text = "PJMatch"
             textSize = 32f
@@ -48,7 +45,6 @@ class LoginActivity : Activity() {
             setPadding(0, 8, 0, 48)
         }
 
-        // Email Label & Input Container
         val emailLabelTextView = TextView(this).apply {
             text = "Adres e-mail"
             textSize = 14f
@@ -92,7 +88,6 @@ class LoginActivity : Activity() {
         emailContainer.addView(emailIcon)
         emailContainer.addView(emailEditText)
 
-        // Password Label & Input Container
         val passwordLabelTextView = TextView(this).apply {
             text = "Hasło"
             textSize = 14f
@@ -147,7 +142,6 @@ class LoginActivity : Activity() {
         passwordContainer.addView(passwordEditText)
         passwordContainer.addView(eyeToggle)
 
-        // Forgot password link
         val forgotPasswordTextView = TextView(this).apply {
             text = "Nie pamiętasz hasła?"
             textSize = 14f
@@ -156,7 +150,6 @@ class LoginActivity : Activity() {
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
-        // Primary Button (Zaloguj się)
         val primaryButtonDrawable = GradientDrawable().apply {
             setColor(Color.parseColor("#3B1895"))
             cornerRadius = 32f
@@ -182,7 +175,6 @@ class LoginActivity : Activity() {
             }
         }
 
-        // Register prompt text
         val registerPromptTextView = TextView(this).apply {
             text = "Pierwszy raz z PJMatch?"
             textSize = 14f
@@ -191,7 +183,6 @@ class LoginActivity : Activity() {
             setPadding(0, 36, 0, 16)
         }
 
-        // Secondary Button (Załóż konto) - Lavender background
         val secondaryButtonDrawable = GradientDrawable().apply {
             setColor(Color.parseColor("#E2DEFA"))
             cornerRadius = 32f
@@ -208,7 +199,6 @@ class LoginActivity : Activity() {
             }
         }
 
-        // Assemble root layout matching logowanie1.png
         rootLayout.addView(titleTextView, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
