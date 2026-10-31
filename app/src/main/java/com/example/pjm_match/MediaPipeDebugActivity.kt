@@ -43,6 +43,9 @@ import org.json.JSONObject
 import java.util.concurrent.Executors
 import kotlin.math.max
 import kotlin.math.sqrt
+import kotlin.math.abs
+import kotlin.math.acos
+import kotlin.math.min
 
 data class Point3D(val x: Float, val y: Float, val z: Float)
 
@@ -605,6 +608,11 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val smoothnessInfo = analyzeUserFriendlySmoothness(activeSample)
         val trajectoryInfo = analyzeUserFriendlyTrajectory(rawDtwDistance, activeSample, activeReference)
 
+        val frechetTrajectoryInfo = analyzeFrechetTrajectoryAndCompleteness(rawDtwDistance, activeSample, activeReference)
+        val orientationInfo = analyzePalmOrientation(activeSample, activeReference)
+        val asymmetryInfo = analyzeBimanualVelocityAsymmetry(activeSample, activeReference)
+        val jerkSmoothnessInfo = analyzeMovementJerkSmoothness(activeSample)
+
         val dialogMessage = StringBuilder().apply {
             append("🏆 TWÓJ WYNIK: $scorePoints / 100 pkt\n")
             append("Ocena: $stars\n")
@@ -623,6 +631,22 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             append("3. 🎯 PRECYZJA UŁOŻENIA DŁONI:\n")
             append("${trajectoryInfo.first}\n")
             append("• ${trajectoryInfo.second}\n\n")
+
+            append("4. 📐 TRAJEKTORIA I PEŁNOŚĆ RUCHU (DTW / Fréchet):\n")
+            append("${frechetTrajectoryInfo.first}\n")
+            append("• ${frechetTrajectoryInfo.second}\n\n")
+
+            append("5. 🧭 ORIENTACJA DŁONI (Kąt nachylenia):\n")
+            append("${orientationInfo.first}\n")
+            append("• ${orientationInfo.second}\n\n")
+
+            append("6. ⚖️ ASYMETRIA PRĘDKOŚCI (Znaki oburęczne):\n")
+            append("${asymmetryInfo.first}\n")
+            append("• ${asymmetryInfo.second}\n\n")
+
+            append("7. 🤖 GŁADKOŚĆ RUCHU (Szarpnięcia / Pochodna przyspieszenia):\n")
+            append("${jerkSmoothnessInfo.first}\n")
+            append("• ${jerkSmoothnessInfo.second}\n\n")
 
             append("Czy chcesz zapisać to nagranie jako nowy wzorzec gestu?")
         }.toString()
@@ -812,6 +836,331 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             }
         }
         return if (count > 0) sumY / count else 0.5f // Domyślnie środek kadru w przypadku braku dłoni
+    }
+
+    private fun analyzeFrechetTrajectoryAndCompleteness(
+        dtwDistance: Float,
+        sample: List<FrameSkeleton>,
+        reference: List<FrameSkeleton>
+    ): Pair<String, String> {
+        val frechetDist = calculateDiscreteFrechetDistance(sample, reference)
+        val combinedDist = (dtwDistance * 0.65f) + (frechetDist * 0.35f)
+        val scorePercent = (max(0f, (1f - combinedDist * 0.85f) * 100f) + 10f).toInt().coerceIn(0, 100)
+
+        val expertScale = when {
+            scorePercent >= 90 -> 5
+            scorePercent >= 75 -> 4
+            scorePercent >= 60 -> 3
+            scorePercent >= 45 -> 2
+            scorePercent >= 25 -> 1
+            else -> 0
+        }
+
+        val issues = mutableListOf<String>()
+
+        if (sample.isNotEmpty() && reference.isNotEmpty()) {
+            val sStart = getHandCenter3D(sample.first())
+            val sEnd = getHandCenter3D(sample.last())
+            val rStart = getHandCenter3D(reference.first())
+            val rEnd = getHandCenter3D(reference.last())
+
+            val sMeanY = sample.map { getHandCenter3D(it).y }.average().toFloat()
+            val rMeanY = reference.map { getHandCenter3D(it).y }.average().toFloat()
+            if (sMeanY - rMeanY > 0.30f) issues.add("znak zamigany za nisko")
+            else if (sMeanY - rMeanY < -0.30f) issues.add("znak zamigany za wysoko")
+
+            val startDist = sqrt((sStart.x - rStart.x) * (sStart.x - rStart.x) + (sStart.y - rStart.y) * (sStart.y - rStart.y))
+            val endDist = sqrt((sEnd.x - rEnd.x) * (sEnd.x - rEnd.x) + (sEnd.y - rEnd.y) * (sEnd.y - rEnd.y))
+            if (startDist > 0.42f) issues.add("początek w złym miejscu")
+            if (endDist > 0.42f) issues.add("koniec w złym miejscu")
+
+            val sSpanX = (sample.maxOfOrNull { getHandCenter3D(it).x } ?: 0f) - (sample.minOfOrNull { getHandCenter3D(it).x } ?: 0f)
+            val sSpanY = (sample.maxOfOrNull { getHandCenter3D(it).y } ?: 0f) - (sample.minOfOrNull { getHandCenter3D(it).y } ?: 0f)
+            val rSpanX = (reference.maxOfOrNull { getHandCenter3D(it).x } ?: 0f) - (reference.minOfOrNull { getHandCenter3D(it).x } ?: 0f)
+            val rSpanY = (reference.maxOfOrNull { getHandCenter3D(it).y } ?: 0f) - (reference.minOfOrNull { getHandCenter3D(it).y } ?: 0f)
+
+            val sTotalSpan = sqrt(sSpanX * sSpanX + sSpanY * sSpanY)
+            val rTotalSpan = sqrt(rSpanX * rSpanX + rSpanY * rSpanY)
+
+            if (rTotalSpan > 0.08f) {
+                if (sTotalSpan < (rTotalSpan * 0.45f) - 0.05f) issues.add("niepełny ruch (zbyt krótki tor)")
+                else if (sTotalSpan > (rTotalSpan * 2.3f) + 0.15f) issues.add("zbyt rozległy tor ruchu")
+            }
+        }
+
+        val frechetStr = String.format(java.util.Locale.US, "%.2f", frechetDist)
+        val mainText = "📐 Ocena algorytmu: $expertScale/5 ($scorePercent%) | Fréchet: $frechetStr"
+
+        val advice = if (issues.isEmpty()) {
+            "Pełność ruchu oraz punkty początkowe i końcowe są zgodne ze wzorcem."
+        } else {
+            "Wykryte odchylenia: ${issues.joinToString(", ")}."
+        }
+
+        return Pair(mainText, advice)
+    }
+
+    private fun calculateDiscreteFrechetDistance(sample: List<FrameSkeleton>, reference: List<FrameSkeleton>): Float {
+        val n = sample.size
+        val m = reference.size
+        if (n == 0 || m == 0) return 1.0f
+
+        val ca = Array(n) { FloatArray(m) { -1f } }
+        for (i in 0 until n) {
+            for (j in 0 until m) {
+                val dist = calculateFrameDistance(sample[i], reference[j])
+                ca[i][j] = when {
+                    i == 0 && j == 0 -> dist
+                    i > 0 && j == 0 -> maxOf(ca[i - 1][0], dist)
+                    i == 0 && j > 0 -> maxOf(ca[0][j - 1], dist)
+                    else -> maxOf(minOf(ca[i - 1][j], ca[i][j - 1], ca[i - 1][j - 1]), dist)
+                }
+            }
+        }
+        return ca[n - 1][m - 1]
+    }
+
+    private fun analyzePalmOrientation(
+        sample: List<FrameSkeleton>,
+        reference: List<FrameSkeleton>
+    ): Pair<String, String> {
+        val sampleNormals = sample.mapNotNull { frame ->
+            frame.handLandmarks.minByOrNull { h -> h.map { it.x }.average() }?.let { calculatePalmNormal(it) }
+        }
+        val refNormals = reference.mapNotNull { frame ->
+            frame.handLandmarks.minByOrNull { h -> h.map { it.x }.average() }?.let { calculatePalmNormal(it) }
+        }
+
+        if (sampleNormals.isEmpty() || refNormals.isEmpty()) {
+            return Pair("🧭 Orientacja dłoni: B/D", "Brak wykrytych dłoni do obliczenia kąta (Palm Surface Angle).")
+        }
+
+        val steps = minOf(sampleNormals.size, refNormals.size)
+        var angleSumDeg = 0f
+
+        for (i in 0 until steps) {
+            val sIdx = (i * (sampleNormals.size - 1)) / max(1, steps - 1)
+            val rCenterIdx = (i * (refNormals.size - 1)) / max(1, steps - 1)
+            val n1 = sampleNormals[sIdx]
+
+            var bestAngleForFrame = 180f
+            val windowStart = max(0, rCenterIdx - 3)
+            val windowEnd = min(refNormals.size - 1, rCenterIdx + 3)
+
+            for (rIdx in windowStart..windowEnd) {
+                val n2 = refNormals[rIdx]
+                val dot = (n1.x * n2.x + n1.y * n2.y + n1.z * n2.z).coerceIn(-1f, 1f)
+                val angleDeg = Math.toDegrees(acos(dot.toDouble())).toFloat()
+                if (angleDeg < bestAngleForFrame) {
+                    bestAngleForFrame = angleDeg
+                }
+            }
+
+            angleSumDeg += bestAngleForFrame
+        }
+
+        val rawAvgAngleDiff = angleSumDeg / steps
+
+        val effectiveAngleDiff = max(0f, rawAvgAngleDiff - 12f)
+
+        val orientationScore = (100f - (effectiveAngleDiff / 115f) * 100f + 5f).toInt().coerceIn(0, 100)
+        val angleStr = String.format(java.util.Locale.US, "%.1f°", rawAvgAngleDiff)
+
+        val mainText = when {
+            orientationScore >= 80 -> "🧭 Orientacja dłoni: $orientationScore% (Odchylenie: $angleStr)"
+            orientationScore >= 60 -> "📐 Orientacja dłoni: $orientationScore% (Odchylenie: $angleStr)"
+            else -> "🔄 Orientacja dłoni: $orientationScore% (Błąd kąta: $angleStr)"
+        }
+
+        val advice = when {
+            orientationScore >= 80 -> "Kąt nachylenia płaszczyzny dłoni (Palm Surface Angle) jest zgodny ze wzorcem."
+            orientationScore >= 60 -> "Dłoń jest lekko obrócona względem wzorca (śr. o $angleStr). Skoryguj rotację nadgarstka."
+            else -> "Zła orientacja dłoni (różnica $angleStr) – zwróć uwagę, w którą stronę skierowana jest dłoń."
+        }
+
+        return Pair(mainText, advice)
+    }
+
+    private fun calculatePalmNormal(hand: List<Point3D>): Point3D? {
+        if (hand.size < 18) return null
+        val wrist = hand[0]
+        val indexMcp = hand[5]
+        val pinkyMcp = hand[17]
+
+        val zDamping = 0.35f
+
+        val v1x = indexMcp.x - wrist.x
+        val v1y = indexMcp.y - wrist.y
+        val v1z = (indexMcp.z - wrist.z) * zDamping
+
+        val v2x = pinkyMcp.x - wrist.x
+        val v2y = pinkyMcp.y - wrist.y
+        val v2z = (pinkyMcp.z - wrist.z) * zDamping
+
+        val nx = v1y * v2z - v1z * v2y
+        val ny = v1z * v2x - v1x * v2z
+        val nz = v1x * v2y - v1y * v2x
+
+        val len = sqrt(nx * nx + ny * ny + nz * nz)
+        return if (len > 1e-5f) Point3D(nx / len, ny / len, nz / len) else null
+    }
+
+    private fun analyzeBimanualVelocityAsymmetry(
+        sample: List<FrameSkeleton>,
+        reference: List<FrameSkeleton>
+    ): Pair<String, String> {
+        val refTwoHandedCount = reference.count { it.handLandmarks.size >= 2 }
+        val sampleTwoHandedCount = sample.count { it.handLandmarks.size >= 2 }
+
+        if (refTwoHandedCount < reference.size * 0.25f) {
+            return if (sampleTwoHandedCount > sample.size * 0.4f) {
+                Pair("⚠️ Znak jednoręczny (Wykryto 2 dłonie)", "Wzorzec jest jednoręczny, a wykryto ruch obu dłoni.")
+            } else {
+                Pair("✋ Znak jednoręczny: Zgodny", "Asymetria prędkości nie dotyczy (znak wykonywany jedną ręką).")
+            }
+        }
+
+        if (sampleTwoHandedCount < 2) {
+            return Pair("❌ Brak drugiej dłoni (0%)", "Ten znak jest oburęczny! Użyj obu rąk.")
+        }
+
+        val (sampleLeftVel, sampleRightVel) = calculateLeftRightVelocities(sample)
+        val (refLeftVel, refRightVel) = calculateLeftRightVelocities(reference)
+
+        val sampleTotal = sampleLeftVel + sampleRightVel + 1e-5f
+        val refTotal = refLeftVel + refRightVel + 1e-5f
+
+        val sampleRatio = sampleLeftVel / sampleTotal
+        val refRatio = refLeftVel / refTotal
+
+        val asymmetryDiff = abs(sampleRatio - refRatio)
+        val symmetryScore = (100f - asymmetryDiff * 180f).toInt().coerceIn(0, 100)
+
+        val sLeftStr = String.format(java.util.Locale.US, "%.2f", sampleLeftVel)
+        val sRightStr = String.format(java.util.Locale.US, "%.2f", sampleRightVel)
+
+        val mainText = when {
+            symmetryScore >= 80 -> "⚖️ Symetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
+            symmetryScore >= 60 -> "👐 Symetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
+            else -> "⚠️ Asymetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
+        }
+
+        val advice = when {
+            symmetryScore >= 80 -> "Proporcja prędkości między lewą a prawą ręką jest zgodna ze wzorcem."
+            sampleRatio > refRatio + 0.12f -> "Lewa ręka porusza się za szybko względem prawej w porównaniu do wzorca."
+            sampleRatio < refRatio - 0.12f -> "Prawa ręka porusza się za szybko względem lewej w porównaniu do wzorca."
+            else -> "Niewielka asymetria prędkości między dłońmi."
+        }
+
+        return Pair(mainText, advice)
+    }
+
+    private fun calculateLeftRightVelocities(frames: List<FrameSkeleton>): Pair<Float, Float> {
+        var leftVelSum = 0f
+        var rightVelSum = 0f
+        var pairsCount = 0
+
+        for (i in 0 until frames.size - 1) {
+            val f1 = frames[i]
+            val f2 = frames[i + 1]
+
+            if (f1.handLandmarks.size >= 2 && f2.handLandmarks.size >= 2) {
+                val dt = max(1L, f2.timestampMs - f1.timestampMs) / 1000f
+
+                val f1Sorted = f1.handLandmarks.sortedBy { hand -> hand.map { it.x }.average() }
+                val f2Sorted = f2.handLandmarks.sortedBy { hand -> hand.map { it.x }.average() }
+
+                val dLeft = calculateSingleHandDistance(f1Sorted[0], f2Sorted[0])
+                val dRight = calculateSingleHandDistance(f1Sorted[1], f2Sorted[1])
+
+                leftVelSum += dLeft / dt
+                rightVelSum += dRight / dt
+                pairsCount++
+            }
+        }
+
+        return if (pairsCount > 0) Pair(leftVelSum / pairsCount, rightVelSum / pairsCount) else Pair(0f, 0f)
+    }
+
+    private fun calculateSingleHandDistance(h1: List<Point3D>, h2: List<Point3D>): Float {
+        val minLen = minOf(h1.size, h2.size)
+        if (minLen == 0) return 0f
+        var sum = 0f
+        for (i in 0 until minLen) {
+            val dx = h1[i].x - h2[i].x
+            val dy = h1[i].y - h2[i].y
+            val dz = (h1[i].z - h2[i].z) * 0.5f
+            sum += sqrt(dx * dx + dy * dy + dz * dz)
+        }
+        return sum / minLen
+    }
+
+    private fun analyzeMovementJerkSmoothness(sample: List<FrameSkeleton>): Pair<String, String> {
+        if (sample.size <= 4) return Pair("🤖 Gładkość (Jerk): B/D", "Za mało klatek do obliczenia pochodnej przyspieszenia.")
+
+        val rawVelocities = mutableListOf<Float>()
+        for (i in 0 until sample.size - 1) {
+            rawVelocities.add(calculateFrameDistance(sample[i], sample[i + 1]))
+        }
+
+        val velocities = mutableListOf<Float>()
+        for (i in rawVelocities.indices) {
+            val prev = rawVelocities[maxOf(0, i - 1)]
+            val curr = rawVelocities[i]
+            velocities.add(curr * 0.7f + prev * 0.3f)
+        }
+
+        val accelerations = mutableListOf<Float>()
+        for (i in 0 until velocities.size - 1) {
+            accelerations.add(velocities[i + 1] - velocities[i])
+        }
+
+        val jerks = mutableListOf<Float>()
+        for (i in 0 until accelerations.size - 1) {
+            jerks.add(abs(accelerations[i + 1] - accelerations[i]))
+        }
+
+        if (jerks.isEmpty()) return Pair("🤖 Gładkość (Jerk): B/D", "Brak danych o zmianie przyspieszenia.")
+
+        val sortedJerks = jerks.sorted()
+        val filteredJerks = if (sortedJerks.size > 4) sortedJerks.dropLast(1) else sortedJerks
+
+        val meanJerk = filteredJerks.average().toFloat()
+
+        val sensitivity = 3.4f
+        val jerkScorePercent = (max(0f, (1f - meanJerk * sensitivity) * 100f)).toInt().coerceIn(0, 100)
+
+        val jerkStr = String.format(java.util.Locale.US, "%.3f", meanJerk)
+
+        val mainText = when {
+            jerkScorePercent >= 80 -> "🌊 Gładkość (Jerk): $jerkScorePercent% (Płynny | Jerk: $jerkStr)"
+            jerkScorePercent >= 60 -> "👍 Gładkość (Jerk): $jerkScorePercent% (Lekkie wahania | Jerk: $jerkStr)"
+            else -> "🤖 Gładkość (Jerk): $jerkScorePercent% (Szarpany | Jerk: $jerkStr)"
+        }
+
+        val advice = when {
+            jerkScorePercent >= 80 -> "Niska pochodna przyspieszenia – ruch rąk jest gładki, bez nagłych zrywów."
+            jerkScorePercent >= 60 -> "Wykryto niewielkie skoki przyspieszenia dłoni – prowadź dłoń bardziej jednostajnie."
+            else -> "Wysoka wartość zrywu (Jerk) – ruch był szarpany lub robotyczny. Unikaj gwałtownych zatrzymań."
+        }
+
+        return Pair(mainText, advice)
+    }
+
+    private fun getHandCenter3D(frame: FrameSkeleton): Point3D {
+        var sumX = 0f
+        var sumY = 0f
+        var sumZ = 0f
+        var count = 0
+        frame.handLandmarks.forEach { hand ->
+            hand.forEach { pt ->
+                sumX += pt.x
+                sumY += pt.y
+                sumZ += pt.z
+                count++
+            }
+        }
+        return if (count > 0) Point3D(sumX / count, sumY / count, sumZ / count) else Point3D(0f, 0.5f, 0f)
     }
 
     private fun compareWithReference() {
