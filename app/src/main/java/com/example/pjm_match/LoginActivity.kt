@@ -1,269 +1,137 @@
 package com.example.pjm_match
 
-import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.InputType
+import android.util.Patterns
 import android.view.Gravity
-import android.widget.Button
+import android.view.inputmethod.EditorInfo
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
+import com.example.pjm_match.ui.Fonts
+import com.example.pjm_match.ui.MATCH
+import com.example.pjm_match.ui.WRAP
+import com.example.pjm_match.ui.horizontal
+import com.example.pjm_match.ui.icon
+import com.example.pjm_match.ui.label
+import com.example.pjm_match.ui.onTap
+import com.example.pjm_match.ui.pad
+import com.example.pjm_match.ui.place
+import com.example.pjm_match.ui.roundedRect
 
-class LoginActivity : Activity() {
+class LoginActivity : BaseActivity() {
+
+    override fun screenBackground(): Int = palette.screen
+
+    private lateinit var emailInput: EditText
+    private lateinit var passwordInput: EditText
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        actionBar?.hide()
-
-        // ScrollView to support full content on smaller screens
-        val scrollView = ScrollView(this).apply {
-            setBackgroundColor(Color.WHITE)
-            isFillViewport = true
+        if (settings.loggedIn) {
+            openHome()
+            return
         }
 
-        // Root container matching logowanie1.png
-        val rootLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        scaffold(navTab = null) {
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(48, 80, 48, 64)
-        }
+            place(label("PJMatch", 40f, palette.primary, 800) { gravity = Gravity.CENTER }, WRAP, WRAP, top = 48)
+            place(label("Poznaj język migowy od podstaw", 17f, palette.textSecondary) { gravity = Gravity.CENTER }, WRAP, WRAP, top = 10)
 
-        // Top Brand Header (PJMMatch & Subtitle)
-        val titleTextView = TextView(this).apply {
-            text = "PJMatch"
-            textSize = 32f
-            setTextColor(Color.parseColor("#3B1895"))
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            gravity = Gravity.CENTER
-        }
+            place(ImageView(context).apply {
+                setImageResource(if (palette.isDark) R.drawable.login_illustration_dark else R.drawable.login_illustration_light)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                adjustViewBounds = true
+                contentDescription = "Osoba miga słowo Cześć"
+            }, MATCH, 124, top = 40, start = -8, end = -8)
 
-        val subtitleTextView = TextView(this).apply {
-            text = "Poznaj język migowy od podstaw"
-            textSize = 15f
-            setTextColor(Color.parseColor("#7E7A93"))
-            gravity = Gravity.CENTER
-            setPadding(0, 8, 0, 48)
-        }
+            place(fieldLabel("Adres e-mail"), top = 36, bottom = 10)
+            emailInput = input("Wpisz swój adres e-mail", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+            place(inputField(R.drawable.ic_mail, emailInput), MATCH, 56)
 
-        // Email Label & Input Container
-        val emailLabelTextView = TextView(this).apply {
-            text = "Adres e-mail"
-            textSize = 14f
-            setTextColor(Color.parseColor("#1C1635"))
-            setTypeface(null, android.graphics.Typeface.BOLD)
-        }
-
-        val inputDrawable = GradientDrawable().apply {
-            setColor(Color.WHITE)
-            setStroke(2, Color.parseColor("#E4E2F0"))
-            cornerRadius = 32f
-        }
-
-        val emailContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = inputDrawable
-            setPadding(32, 16, 32, 16)
-        }
-
-        val emailIcon = TextView(this).apply {
-            text = "✉️"
-            textSize = 18f
-            setPadding(0, 0, 16, 0)
-        }
-
-        val standardTypeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
-
-        val emailEditText = EditText(this).apply {
-            hint = "Wpisz swój adres e-mail"
-            setHintTextColor(Color.parseColor("#A8A5BE"))
-            setTextColor(Color.parseColor("#1C1635"))
-            textSize = 15f
-            typeface = standardTypeface
-            background = null
-            setSingleLine(true)
-            inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        emailContainer.addView(emailIcon)
-        emailContainer.addView(emailEditText)
-
-        // Password Label & Input Container
-        val passwordLabelTextView = TextView(this).apply {
-            text = "Hasło"
-            textSize = 14f
-            setTextColor(Color.parseColor("#1C1635"))
-            setTypeface(null, android.graphics.Typeface.BOLD)
-        }
-
-        val passwordContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = inputDrawable.constantState?.newDrawable() as GradientDrawable
-            setPadding(32, 16, 32, 16)
-        }
-
-        val passwordIcon = TextView(this).apply {
-            text = "🔒"
-            textSize = 18f
-            setPadding(0, 0, 16, 0)
-        }
-
-        val passwordEditText = EditText(this).apply {
-            hint = "Wpisz hasło"
-            setHintTextColor(Color.parseColor("#A8A5BE"))
-            setTextColor(Color.parseColor("#1C1635"))
-            textSize = 15f
-            background = null
-            setSingleLine(true)
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-            typeface = standardTypeface
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        val eyeToggle = TextView(this).apply {
-            text = "👁"
-            textSize = 18f
-            setPadding(16, 0, 0, 0)
-            setOnClickListener {
-                val currentSelection = passwordEditText.selectionEnd
-                if ((passwordEditText.inputType and android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) {
-                    passwordEditText.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-                    text = "👁"
-                } else {
-                    passwordEditText.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                    text = "👁‍🗨"
-                }
-                passwordEditText.typeface = standardTypeface
-                passwordEditText.setSelection(currentSelection)
-            }
-        }
-
-        passwordContainer.addView(passwordIcon)
-        passwordContainer.addView(passwordEditText)
-        passwordContainer.addView(eyeToggle)
-
-        // Forgot password link
-        val forgotPasswordTextView = TextView(this).apply {
-            text = "Nie pamiętasz hasła?"
-            textSize = 14f
-            setTextColor(Color.parseColor("#3B1895"))
-            gravity = Gravity.END
-            setTypeface(null, android.graphics.Typeface.BOLD)
-        }
-
-        // Primary Button (Zaloguj się)
-        val primaryButtonDrawable = GradientDrawable().apply {
-            setColor(Color.parseColor("#3B1895"))
-            cornerRadius = 32f
-        }
-
-        val loginButton = Button(this).apply {
-            text = "Zaloguj się"
-            textSize = 16f
-            setTextColor(Color.WHITE)
-            background = primaryButtonDrawable
-            setPadding(32, 36, 32, 36)
-            setOnClickListener {
-                val email = emailEditText.text.toString().trim()
-                val password = passwordEditText.text.toString().trim()
-
-                if (email.isEmpty() || password.isEmpty()) {
-                    Toast.makeText(this@LoginActivity, "Wpisz adres e-mail i hasło", Toast.LENGTH_SHORT).show()
-                } else {
-                    val intent = Intent(this@LoginActivity, MainActivity::class.java)
-                    startActivity(intent)
-                    finish()
+            place(fieldLabel("Hasło"), top = 20, bottom = 10)
+            passwordInput = input("Wpisz hasło", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD).apply {
+                imeOptions = EditorInfo.IME_ACTION_DONE
+                setOnEditorActionListener { _, actionId, _ ->
+                    if (actionId == EditorInfo.IME_ACTION_DONE) login()
+                    actionId == EditorInfo.IME_ACTION_DONE
                 }
             }
-        }
+            place(inputField(R.drawable.ic_lock, passwordInput, passwordToggle()), MATCH, 56)
 
-        // Register prompt text
-        val registerPromptTextView = TextView(this).apply {
-            text = "Pierwszy raz z PJMatch?"
-            textSize = 14f
-            setTextColor(Color.parseColor("#7E7A93"))
-            gravity = Gravity.CENTER
-            setPadding(0, 36, 0, 16)
-        }
+            place(label("Nie pamiętasz hasła?", 15f, palette.primary, 700) {
+                pad(4, 6)
+                onTap(8, palette.ripple) {
+                    Toast.makeText(this@LoginActivity, "Resetowanie hasła w przygotowaniu", Toast.LENGTH_SHORT).show()
+                }
+            }, WRAP, WRAP, top = 14, gravity = Gravity.END)
 
-        // Secondary Button (Załóż konto) - Lavender background
-        val secondaryButtonDrawable = GradientDrawable().apply {
-            setColor(Color.parseColor("#E2DEFA"))
-            cornerRadius = 32f
-        }
+            place(primaryButton("Zaloguj się", R.drawable.ic_arrow_right) { login() }, MATCH, 56, top = 28)
 
-        val registerButton = Button(this).apply {
-            text = "Załóż konto"
-            textSize = 16f
-            setTextColor(Color.parseColor("#3B1895"))
-            background = secondaryButtonDrawable
-            setPadding(32, 36, 32, 36)
-            setOnClickListener {
+            place(label("Pierwszy raz z PJMatch?", 15f, palette.textSecondary) { gravity = Gravity.CENTER }, WRAP, WRAP, top = 28, bottom = 12)
+            place(secondaryButton("Załóż konto") {
                 Toast.makeText(this@LoginActivity, "Rejestracja w przygotowaniu", Toast.LENGTH_SHORT).show()
+            }, MATCH, 56)
+        }
+    }
+
+    private fun fieldLabel(text: String) = label(text, 15f, palette.text, 600)
+
+    private fun input(hint: String, type: Int) = EditText(this).apply {
+        this.hint = hint
+        inputType = type
+        setSingleLine(true)
+        background = null
+        textSize = 16f
+        typeface = Fonts.weight(400)
+        setTextColor(palette.text)
+        setHintTextColor(palette.textMuted)
+        setPadding(0, 0, 0, 0)
+    }
+
+    private fun inputField(iconRes: Int, input: EditText, trailing: ImageView? = null): LinearLayout = horizontal {
+        background = roundedRect(palette.input, 16, palette.border, 1)
+        pad(18, 0)
+        place(icon(iconRes, palette.textSecondary), 22, 22, end = 14)
+        place(input, 0, WRAP, 1f)
+        trailing?.let { place(it, 40, 40, start = 4) }
+    }
+
+    private fun passwordToggle(): ImageView = icon(R.drawable.ic_eye, palette.textSecondary).apply {
+        pad(9)
+        contentDescription = "Pokaż hasło"
+        onTap(20, palette.ripple) {
+            val visible = passwordInput.inputType and InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            val selection = passwordInput.selectionEnd
+            passwordInput.inputType = InputType.TYPE_CLASS_TEXT or
+                if (visible) InputType.TYPE_TEXT_VARIATION_PASSWORD else InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            passwordInput.typeface = Fonts.weight(400)
+            passwordInput.setSelection(selection)
+            setImageResource(if (visible) R.drawable.ic_eye else R.drawable.ic_eye_off)
+            contentDescription = if (visible) "Pokaż hasło" else "Ukryj hasło"
+        }
+    }
+
+    private fun login() {
+        val email = emailInput.text.toString().trim()
+        val password = passwordInput.text.toString()
+        when {
+            email.isEmpty() || password.isEmpty() ->
+                Toast.makeText(this, "Wpisz adres e-mail i hasło", Toast.LENGTH_SHORT).show()
+            !Patterns.EMAIL_ADDRESS.matcher(email).matches() ->
+                Toast.makeText(this, "Niepoprawny adres e-mail", Toast.LENGTH_SHORT).show()
+            else -> {
+                settings.email = email
+                settings.loggedIn = true
+                openHome()
             }
         }
+    }
 
-        // Assemble root layout matching logowanie1.png
-        rootLayout.addView(titleTextView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ))
-
-        rootLayout.addView(subtitleTextView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ))
-
-        rootLayout.addView(emailLabelTextView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 8 })
-
-        rootLayout.addView(emailContainer, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 24 })
-
-        rootLayout.addView(passwordLabelTextView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 8 })
-
-        rootLayout.addView(passwordContainer, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 12 })
-
-        rootLayout.addView(forgotPasswordTextView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 36 })
-
-        rootLayout.addView(loginButton, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 8 })
-
-        rootLayout.addView(registerPromptTextView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ))
-
-        rootLayout.addView(registerButton, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ))
-
-        scrollView.addView(rootLayout, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.MATCH_PARENT
-        ))
-
-        setContentView(scrollView)
+    private fun openHome() {
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
     }
 }
