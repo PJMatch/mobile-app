@@ -2,7 +2,6 @@ package com.example.pjm_match
 
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -10,21 +9,16 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.Gravity
 import android.view.View
 import android.view.ViewOutlineProvider
-import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.OptIn
-import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -34,12 +28,29 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.pjm_match.ui.MATCH
+import com.example.pjm_match.ui.Palette
+import com.example.pjm_match.ui.ProgressBarView
+import com.example.pjm_match.ui.WRAP
+import com.example.pjm_match.ui.horizontal
+import com.example.pjm_match.ui.icon
+import com.example.pjm_match.ui.label
+import com.example.pjm_match.ui.onTap
+import com.example.pjm_match.ui.oval
+import com.example.pjm_match.ui.pad
+import com.example.pjm_match.ui.place
+import com.example.pjm_match.ui.roundedRect
+import com.example.pjm_match.ui.vertical
+import com.example.pjm_match.ui.withAlpha
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
-class AiTranslatorActivity : AppCompatActivity() {
+class AiTranslatorActivity : BaseActivity() {
+
+    override val tabRoot = Tab.TRANSLATOR
 
     private lateinit var previewView: PreviewView
     private lateinit var permissionOverlayLayout: LinearLayout
@@ -61,10 +72,12 @@ class AiTranslatorActivity : AppCompatActivity() {
     @Volatile
     private var activeRecording: PjmSignRecording? = null
 
-    private lateinit var translateButton: Button
+    private lateinit var translateButton: ActionButton
     private lateinit var resultText: TextView
     private lateinit var confidenceText: TextView
-    private lateinit var progressFillView: View
+    private lateinit var confidenceBar: ProgressBarView
+    private lateinit var statusBadge: LinearLayout
+    private lateinit var statusBadgeText: TextView
 
     companion object {
         private const val CAMERA_PERMISSION_REQUEST_CODE = 1001
@@ -72,458 +85,93 @@ class AiTranslatorActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar?.hide()
-
-        val mainContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#F5F5FA"))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        val scrollView = ScrollView(this).apply {
-            isFillViewport = true
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-        }
-
-        val rootLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(40, 48, 40, 40)
-        }
-
-        // --- Header Section ---
-        val headerLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, 12)
-        }
-
-        val titleTextLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        val subtitleTag = TextView(this).apply {
-            text = "ZROZUM WIĘCEJ"
-            textSize = 12f
-            setTextColor(Color.parseColor("#D3821C"))
-            setTypeface(null, Typeface.BOLD)
-            letterSpacing = 0.08f
-        }
-
-        val mainTitle = TextView(this).apply {
-            text = "Tłumacz miganie"
-            textSize = 28f
-            setTextColor(Color.parseColor("#1C1635"))
-            setTypeface(null, Typeface.BOLD)
-            setPadding(0, 4, 0, 0)
-        }
-
-        titleTextLayout.addView(subtitleTag)
-        titleTextLayout.addView(mainTitle)
-
-        headerLayout.addView(titleTextLayout)
-
-        val descriptionText = TextView(this).apply {
-            text = "Pokaż znak do kamery. AI pomoże Ci odkryć jego znaczenie."
-            textSize = 14f
-            setTextColor(Color.parseColor("#7E7A93"))
-            setPadding(0, 0, 0, 32)
-        }
-
-        rootLayout.addView(headerLayout)
-        rootLayout.addView(descriptionText)
-
-        // --- Camera Card Container ---
-        val cameraCard = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(this@AiTranslatorActivity, 360)
-            ).apply {
-                bottomMargin = 28
-            }
-
-            val bgDrawable = GradientDrawable().apply {
-                setColor(Color.parseColor("#2A204B"))
-                cornerRadius = dpToPx(this@AiTranslatorActivity, 32).toFloat()
-            }
-            background = bgDrawable
-            outlineProvider = ViewOutlineProvider.BACKGROUND
-            clipToOutline = true
-        }
-
-        // CameraX PreviewView
-        previewView = PreviewView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            scaleType = PreviewView.ScaleType.FILL_CENTER
-        }
-        cameraCard.addView(previewView)
-
-        // MediaPipe Skeleton Overlay View
-        skeletonOverlayView = SkeletonOverlayView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-        cameraCard.addView(skeletonOverlayView)
-
-        // Permission overlay inside camera card if permission not granted
-        permissionOverlayLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#EE2A204B"))
-            setPadding(32, 32, 32, 32)
-            visibility = View.GONE
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-
-            val iconView = TextView(this@AiTranslatorActivity).apply {
-                text = "📷"
-                textSize = 36f
-                gravity = Gravity.CENTER
-                setPadding(0, 0, 0, 16)
-            }
-
-            val permText = TextView(this@AiTranslatorActivity).apply {
-                text = "Wymagany jest dostęp do kamery,\naby korzystać z tłumacza AI"
-                textSize = 14f
-                setTextColor(Color.WHITE)
-                gravity = Gravity.CENTER
-                setTypeface(null, Typeface.BOLD)
-                setPadding(0, 0, 0, 24)
-            }
-
-            val grantBtnBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#FFC107"))
-                cornerRadius = 24f
-            }
-
-            val grantBtn = Button(this@AiTranslatorActivity).apply {
-                text = "Zezwól na dostęp do kamery"
-                textSize = 14f
-                setTextColor(Color.parseColor("#1C1635"))
-                background = grantBtnBg
-                setTypeface(null, Typeface.BOLD)
-                setPadding(32, 16, 32, 16)
-                setOnClickListener {
-                    requestCameraPermission()
-                }
-            }
-
-            addView(iconView)
-            addView(permText)
-            addView(grantBtn)
-        }
-        cameraCard.addView(permissionOverlayLayout)
-
-        // Top-Right Button: Switch Camera (Front/Back)
-        val switchCamBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#D0FFFFFF"))
-            cornerRadius = 48f
-        }
-
-        val switchCamBtn = TextView(this).apply {
-            text = "🔄"
-            textSize = 18f
-            gravity = Gravity.CENTER
-            background = switchCamBg
-            layoutParams = FrameLayout.LayoutParams(
-                dpToPx(this@AiTranslatorActivity, 44),
-                dpToPx(this@AiTranslatorActivity, 44)
-            ).apply {
-                gravity = Gravity.TOP or Gravity.END
-                topMargin = dpToPx(this@AiTranslatorActivity, 16)
-                marginEnd = dpToPx(this@AiTranslatorActivity, 16)
-            }
-            setOnClickListener {
-                toggleCamera()
-            }
-        }
-        cameraCard.addView(switchCamBtn)
-
-        // Bottom-Center Pill Badge: "Dłonie i twarz w kadrze"
-        val centerPillBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#E0130C2E"))
-            cornerRadius = 36f
-        }
-
-        val centerPill = TextView(this).apply {
-            text = "⛶  Dłonie i twarz w kadrze"
-            textSize = 12f
-            setTextColor(Color.WHITE)
-            setTypeface(null, Typeface.BOLD)
-            background = centerPillBg
-            setPadding(36, 20, 36, 20)
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                bottomMargin = dpToPx(this@AiTranslatorActivity, 18)
-            }
-        }
-        cameraCard.addView(centerPill)
-
-        rootLayout.addView(cameraCard)
-
-        // --- Action Button: "Rozpocznij tłumaczenie" ---
-        val translateButtonBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#2C2085"))
-            cornerRadius = dpToPx(this@AiTranslatorActivity, 28).toFloat()
-        }
-
-        translateButton = Button(this).apply {
-            text = "●  Nagraj znak"
-            textSize = 16f
-            setTextColor(Color.WHITE)
-            background = translateButtonBg
-            setTypeface(null, Typeface.BOLD)
-            setPadding(32, 36, 32, 36)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = 28
-            }
-            setOnClickListener {
+        scaffold(Tab.TRANSLATOR) {
+            place(eyebrow("Zrozum więcej"))
+            place(screenTitle("Tłumacz miganie", Palette.primary), top = 6)
+            place(bodyText("Pokaż znak do kamery. AI pomoże Ci odkryć jego znaczenie."), top = 10)
+            place(cameraCard(), MATCH, 330, top = 22)
+            translateButton = place(primaryButton("Rozpocznij tłumaczenie", Icons.trScan, iconFirst = true) {
                 onTranslateButtonClicked()
-            }
-        }
-        rootLayout.addView(translateButton)
-
-        // --- AI Result Card ("WYNIK AI") ---
-        val aiResultCardBg = GradientDrawable().apply {
-            setColor(Color.WHITE)
-            setStroke(2, Color.parseColor("#E4E2F0"))
-            cornerRadius = dpToPx(this@AiTranslatorActivity, 32).toFloat()
-        }
-
-        val aiResultCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background = aiResultCardBg
-            setPadding(36, 32, 36, 32)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = 24
-            }
+            }, MATCH, 56, top = 24)
+            place(resultCard(), top = 24)
+            place(horizontal {
+                gravity = Gravity.TOP
+                place(icon(Icons.trInfo, Palette.textSecondary), WRAP, WRAP, top = 1)
+                place(
+                    label("Model działa na telefonie i analizuje ruch dłoni, rąk i twarzy. Zadbaj o dobre oświetlenie. AI może się mylić.", 14f, Palette.textSecondary),
+                    0, WRAP, 1f, start = 12,
+                )
+            }, top = 20)
         }
 
-        // Header Row inside AI Result Card
-        val cardHeaderRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, 16)
-        }
-
-        val aiTag = TextView(this).apply {
-            text = "✨  WYNIK AI"
-            textSize = 12f
-            setTextColor(Color.parseColor("#3B1895"))
-            setTypeface(null, Typeface.BOLD)
-            letterSpacing = 0.05f
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        val exampleBadgeBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#FFEED6"))
-            cornerRadius = 24f
-        }
-
-        val exampleBadge = TextView(this).apply {
-            text = "Offline"
-            textSize = 12f
-            setTextColor(Color.parseColor("#D3821C"))
-            setTypeface(null, Typeface.BOLD)
-            background = exampleBadgeBg
-            setPadding(24, 10, 24, 10)
-        }
-
-        cardHeaderRow.addView(aiTag)
-        cardHeaderRow.addView(exampleBadge)
-
-        // Recognized text
-        resultText = TextView(this).apply {
-            text = "Rozpoznano: —"
-            textSize = 20f
-            setTextColor(Color.parseColor("#1C1635"))
-            setTypeface(null, Typeface.BOLD)
-            setPadding(0, 0, 0, 20)
-        }
-
-        // Confidence row
-        val confidenceRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, 12)
-        }
-
-        val confidenceLabel = TextView(this).apply {
-            text = "Pewność rozpoznania"
-            textSize = 13f
-            setTextColor(Color.parseColor("#7E7A93"))
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        confidenceText = TextView(this).apply {
-            text = "—"
-            textSize = 14f
-            setTextColor(Color.parseColor("#D3821C"))
-            setTypeface(null, Typeface.BOLD)
-        }
-
-        confidenceRow.addView(confidenceLabel)
-        confidenceRow.addView(confidenceText)
-
-        // Progress bar
-        val progressTrackBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#E4E2F0"))
-            cornerRadius = 16f
-        }
-
-        val progressTrack = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            background = progressTrackBg
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 16)
-            weightSum = 1f
-        }
-
-        val progressFillBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#D3821C"))
-            cornerRadius = 16f
-        }
-
-        progressFillView = View(this).apply {
-            background = progressFillBg
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0f)
-        }
-
-        progressTrack.addView(progressFillView)
-
-        aiResultCard.addView(cardHeaderRow)
-        aiResultCard.addView(resultText)
-        aiResultCard.addView(confidenceRow)
-        aiResultCard.addView(progressTrack)
-
-        rootLayout.addView(aiResultCard)
-
-        // --- Disclaimer Note at Bottom ---
-        val disclaimerLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.TOP
-            setPadding(8, 0, 8, 32)
-        }
-
-        val infoIcon = TextView(this).apply {
-            text = "ⓘ"
-            textSize = 16f
-            setTextColor(Color.parseColor("#7E7A93"))
-            setPadding(0, 0, 12, 0)
-        }
-
-        val disclaimerText = TextView(this).apply {
-            text = "Model analizuje Twój ruch dłoni i rąk po rozpoczęciu nagrywania i rozpoczyna jego przetwarzanie. Upewnij się, że dłonie i sylwetka są dobrze oświetlone w kadrze."
-            textSize = 12f
-            setTextColor(Color.parseColor("#7E7A93"))
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        disclaimerLayout.addView(infoIcon)
-        disclaimerLayout.addView(disclaimerText)
-
-        rootLayout.addView(disclaimerLayout)
-
-        scrollView.addView(
-            rootLayout,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
-        )
-
-        // --- Bottom Navigation Bar ---
-        val bottomNavLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(Color.WHITE)
-            setPadding(16, 16, 16, 24)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        }
-
-        fun createNavItem(icon: String, label: String, isActive: Boolean, onClick: () -> Unit): LinearLayout {
-            return LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                setOnClickListener { onClick() }
-
-                val iconView = TextView(this@AiTranslatorActivity).apply {
-                    text = icon
-                    textSize = 20f
-                    gravity = Gravity.CENTER
-                }
-
-                val labelView = TextView(this@AiTranslatorActivity).apply {
-                    text = label
-                    textSize = 10f
-                    setTextColor(Color.parseColor(if (isActive) "#3B1895" else "#7E7A93"))
-                    gravity = Gravity.CENTER
-                    setTypeface(null, if (isActive) Typeface.BOLD else Typeface.NORMAL)
-                }
-
-                addView(iconView)
-                addView(labelView)
-            }
-        }
-
-        val navStart = createNavItem("🏠", "Start", false) {
-            startActivity(Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            })
-            finish()
-        }
-        val navNauka = createNavItem("🔀", "Nauka", false) {
-            startActivity(Intent(this, SignListActivity::class.java))
-            finish()
-        }
-        val navAi = createNavItem("⛶", "Tłumacz AI", true) {}
-        val navStats = createNavItem("📊", "Statystyki", false) {
-            Toast.makeText(this, "Statystyki w przygotowaniu", Toast.LENGTH_SHORT).show()
-        }
-        val navProfile = createNavItem("👤", "Profil", false) {
-            Toast.makeText(this, "Profil w przygotowaniu", Toast.LENGTH_SHORT).show()
-        }
-
-        bottomNavLayout.addView(navStart)
-        bottomNavLayout.addView(navNauka)
-        bottomNavLayout.addView(navAi)
-        bottomNavLayout.addView(navStats)
-        bottomNavLayout.addView(navProfile)
-
-        mainContainer.addView(scrollView)
-        mainContainer.addView(bottomNavLayout)
-
-        setContentView(mainContainer)
-
+        setTranslationState(TranslationState.IDLE)
         setupSignRecognition()
         setupMediaPipe()
         checkAndStartCamera()
+    }
+
+    private fun cameraCard(): FrameLayout = FrameLayout(this).apply {
+        background = roundedRect(Palette.hero, 28)
+        outlineProvider = ViewOutlineProvider.BACKGROUND
+        clipToOutline = true
+
+        previewView = place(PreviewView(context).apply {
+            scaleType = PreviewView.ScaleType.FILL_CENTER
+        }, MATCH, MATCH)
+
+        skeletonOverlayView = place(SkeletonOverlayView(context), MATCH, MATCH)
+
+        permissionOverlayLayout = place(vertical {
+            gravity = Gravity.CENTER
+            setBackgroundColor(Palette.overlay)
+            pad(28)
+            visibility = View.GONE
+            place(icon(Icons.permissionCamera, Color.WHITE), WRAP, WRAP)
+            place(label("Wymagany jest dostęp do kamery, aby korzystać z tłumacza AI", 15f, Color.WHITE, 700) {
+                gravity = Gravity.CENTER
+            }, WRAP, WRAP, top = 14)
+            place(ActionButton(context, Palette.heroButtonText).apply {
+                background = roundedRect(Palette.accentStrong, 16)
+                setContent("Zezwól na dostęp")
+                onTap(16, Palette.ripple) { requestCameraPermission() }
+            }, WRAP, 48, top = 18)
+        }, MATCH, MATCH)
+
+        place(horizontal {
+            background = roundedRect(Palette.overlay, 100)
+            pad(12, 7)
+            place(icon(Icons.trCamera, Palette.accentStrong), WRAP, WRAP, end = 8)
+            place(label("PODGLĄD NA ŻYWO", 12f, Color.WHITE, 700) { letterSpacing = 0.03f }, WRAP, WRAP)
+        }, WRAP, WRAP, top = 16, start = 16)
+
+        place(FrameLayout(context).apply {
+            background = oval(Color.WHITE.withAlpha(0.9f))
+            contentDescription = "Przełącz kamerę"
+            place(icon(Icons.trSwitchCamera, Palette.primary), WRAP, WRAP, gravity = Gravity.CENTER)
+            onTap(22, Palette.ripple) { toggleCamera() }
+        }, 44, 44, top = 14, end = 14, gravity = Gravity.TOP or Gravity.END)
+
+        place(horizontal {
+            background = roundedRect(Palette.overlay, 100)
+            pad(18, 9)
+            place(icon(Icons.trScanFace, Palette.accentStrong), WRAP, WRAP, end = 8)
+            place(label("Dłonie i twarz w kadrze", 14f, Color.WHITE, 500), WRAP, WRAP)
+        }, WRAP, WRAP, bottom = 16, gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+    }
+
+    private fun resultCard(): LinearLayout = card(padding = 22) {
+        place(horizontal {
+            place(icon(Icons.trSparkles, Palette.primary), WRAP, WRAP, end = 10)
+            place(label("WYNIK AI", 13f, Palette.primary, 700) { letterSpacing = 0.04f }, 0, WRAP, 1f)
+            statusBadge = place(pill("Gotowy", Palette.accent, Palette.accentTint, sizeSp = 13f), WRAP, WRAP)
+            statusBadgeText = statusBadge.getChildAt(statusBadge.childCount - 1) as TextView
+        })
+        resultText = place(label("Pokaż znak, aby zobaczyć wynik", 23f, Palette.primary, 700), top = 16)
+        place(horizontal {
+            place(label("Pewność rozpoznania", 14.5f, Palette.textSecondary), 0, WRAP, 1f)
+            confidenceText = place(label("—", 16f, Palette.accent, 700), WRAP, WRAP)
+        }, top = 16)
+        confidenceBar = place(ProgressBarView(context, Palette.accentStrong, Palette.tint), MATCH, 8, top = 10)
     }
 
     private fun setupSignRecognition() {
@@ -594,21 +242,29 @@ class AiTranslatorActivity : AppCompatActivity() {
     private fun setTranslationState(state: TranslationState) {
         translationState = state
         translateButton.isEnabled = state != TranslationState.RECOGNIZING
-        translateButton.text = when (state) {
-            TranslationState.IDLE -> "●  Nagraj znak"
-            TranslationState.RECORDING -> "■  Zakończ i rozpoznaj"
-            TranslationState.RECOGNIZING -> "Rozpoznawanie…"
+        when (state) {
+            TranslationState.IDLE -> translateButton.setContent("Rozpocznij tłumaczenie", Icons.trScan, iconFirst = true)
+            TranslationState.RECORDING -> translateButton.setContent("Zakończ i rozpoznaj", Icons.trScan, iconFirst = true)
+            TranslationState.RECOGNIZING -> translateButton.setContent("Rozpoznawanie…", Icons.trSparkles, iconFirst = true)
+        }
+        statusBadgeText.text = when (state) {
+            TranslationState.IDLE -> "Gotowy"
+            TranslationState.RECORDING -> "Nagrywanie"
+            TranslationState.RECOGNIZING -> "Analiza"
         }
     }
 
     private fun showRecognizedSign(prediction: SignPrediction) {
         val recognized = prediction.gloss != PjmSignClassifier.BLANK_GLOSS
         val confidence = if (recognized) prediction.confidence else 0f
-        resultText.text = if (recognized) "Rozpoznano: ${prediction.gloss}" else "Nie rozpoznano znaku"
+        resultText.text = if (recognized) "Rozpoznano: ${displayGloss(prediction.gloss)}" else "Nie rozpoznano znaku"
         confidenceText.text = if (recognized) "${(confidence * 100).roundToInt()}%" else "—"
-        progressFillView.layoutParams = (progressFillView.layoutParams as LinearLayout.LayoutParams).apply {
-            weight = confidence
-        }
+        confidenceBar.fraction = confidence
+    }
+
+    private fun displayGloss(gloss: String): String {
+        val polish = Locale.forLanguageTag("pl")
+        return gloss.replace('-', ' ').lowercase(polish).replaceFirstChar { it.titlecase(polish) }
     }
 
     private fun checkAndStartCamera() {
@@ -675,7 +331,7 @@ class AiTranslatorActivity : AppCompatActivity() {
 
         try {
             provider.bindToLifecycle(this, cameraSelector, preview, analysis)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             e.printStackTrace()
             Toast.makeText(this, "Błąd uruchamiania kamery: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
@@ -695,7 +351,7 @@ class AiTranslatorActivity : AppCompatActivity() {
             )
 
             landmarkExtractor?.detectAsync(uprightBitmap, SystemClock.uptimeMillis())
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             e.printStackTrace()
         } finally {
             imageProxy.close()
@@ -726,9 +382,6 @@ class AiTranslatorActivity : AppCompatActivity() {
         return (dp * context.resources.displayMetrics.density).toInt()
     }
 
-    /**
-     * Custom Overlay View that draws MediaPipe Pose & Hand skeleton landmarks on top of the live camera feed.
-     */
     private inner class SkeletonOverlayView(context: Context) : View(context) {
 
         @Volatile private var pose: List<NormalizedLandmark> = emptyList()
@@ -743,7 +396,6 @@ class AiTranslatorActivity : AppCompatActivity() {
         private var offsetX = 0f
         private var offsetY = 0f
 
-        // Paint for Pose lines (Cyan `#00E5FF`)
         private val poseLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#00E5FF")
             style = Paint.Style.STROKE
@@ -752,13 +404,11 @@ class AiTranslatorActivity : AppCompatActivity() {
             strokeJoin = Paint.Join.ROUND
         }
 
-        // Paint for Pose joint nodes (Golden Amber `#FFD700`)
         private val poseJointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#FFD700")
             style = Paint.Style.FILL
         }
 
-        // Paint for Hand lines (Magenta Pink `#FF4081`)
         private val handLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#FF4081")
             style = Paint.Style.STROKE
@@ -767,15 +417,13 @@ class AiTranslatorActivity : AppCompatActivity() {
             strokeJoin = Paint.Join.ROUND
         }
 
-        // Paint for Hand joint nodes (Bright Green `#00E676`)
         private val handJointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#00E676")
             style = Paint.Style.FILL
         }
 
-        // Corner brackets paint
         private val bracketPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#FFB300")
+            color = Palette.accentStrong
             style = Paint.Style.STROKE
             strokeWidth = dpToPx(context, 4).toFloat()
             strokeCap = Paint.Cap.ROUND
@@ -809,7 +457,6 @@ class AiTranslatorActivity : AppCompatActivity() {
             val h = height.toFloat()
             if (w <= 0 || h <= 0) return
 
-            // 1. Always draw corner brackets framing
             drawCornerBrackets(canvas, w, h)
 
             if (imageWidth <= 0 || imageHeight <= 0) return
@@ -903,28 +550,20 @@ class AiTranslatorActivity : AppCompatActivity() {
 
         private fun drawHandSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>) {
             val handConnections = listOf(
-                // Thumb
                 Pair(0, 1), Pair(1, 2), Pair(2, 3), Pair(3, 4),
-                // Index finger
                 Pair(0, 5), Pair(5, 6), Pair(6, 7), Pair(7, 8),
-                // Middle finger
                 Pair(0, 9), Pair(9, 10), Pair(10, 11), Pair(11, 12),
-                // Ring finger
                 Pair(0, 13), Pair(13, 14), Pair(14, 15), Pair(15, 16),
-                // Pinky finger
                 Pair(0, 17), Pair(17, 18), Pair(18, 19), Pair(19, 20),
-                // Knuckles connection
                 Pair(5, 9), Pair(9, 13), Pair(13, 17)
             )
 
-            // Draw finger bones
             for ((startIdx, endIdx) in handConnections) {
                 val p1 = landmarks[startIdx]
                 val p2 = landmarks[endIdx]
                 canvas.drawLine(px(p1), py(p1), px(p2), py(p2), handLinePaint)
             }
 
-            // Draw finger joint nodes
             val nodeRadius = dpToPx(context, 4).toFloat()
             for (idx in PjmLandmarks.HAND) {
                 canvas.drawCircle(px(landmarks[idx]), py(landmarks[idx]), nodeRadius, handJointPaint)
