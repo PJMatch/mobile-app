@@ -21,7 +21,12 @@
             android:exported="false" />
         <activity android:name=".SignListActivity" />
         <activity android:name=".SignActivity" />
-        <activity android:name=".StatsActivity" />
+        <activity
+            android:name=".StatsActivity"
+            android:theme="@style/Theme.MaterialComponents.Light.NoActionBar" />
+        <activity
+            android:name=".RadarChartFullScreenActivity"
+            android:theme="@style/Theme.MaterialComponents.Light.NoActionBar" />
         <activity
             android:name=".AiTranslatorActivity"
             android:exported="false"
