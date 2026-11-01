@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import com.example.pjm_match.ui.IconSpec
 import com.example.pjm_match.ui.MATCH
 import com.example.pjm_match.ui.Palette
 import com.example.pjm_match.ui.WRAP
@@ -59,14 +60,14 @@ class MainActivity : BaseActivity() {
     }
 
     private fun statsRow(): LinearLayout = horizontal {
-        place(statTile(R.drawable.ic_flame, Palette.accent, Palette.accentTint, "${LearnerStats.streakDays} dni", "Twoja seria", Palette.accent), 0, 88, 1f, end = 8)
-        place(statTile(R.drawable.ic_zap, Palette.primary, Palette.tint, "${LearnerStats.totalXp} XP", "Łącznie", Palette.textSecondary), 0, 88, 1f, start = 8)
+        place(statTile(Icons.startFlame, Palette.accent, Palette.accentTint, "${LearnerStats.streakDays} dni", "Twoja seria", Palette.accent), 0, 88, 1f, end = 8)
+        place(statTile(Icons.startZap, Palette.primary, Palette.tint, "${LearnerStats.totalXp} XP", "Łącznie", Palette.textSecondary), 0, 88, 1f, start = 8)
     }
 
-    private fun statTile(iconRes: Int, iconColor: Int, background: Int, value: String, caption: String, captionColor: Int) = horizontal {
+    private fun statTile(iconSpec: IconSpec, iconColor: Int, background: Int, value: String, caption: String, captionColor: Int) = horizontal {
         this.background = roundedRect(background, 20)
         pad(18, 0)
-        place(icon(iconRes, iconColor), 26, 26, end = 14)
+        place(icon(iconSpec, iconColor), WRAP, WRAP, end = 14)
         place(vertical {
             place(label(value, 24f, Palette.text, 700) { maxLines = 1 })
             place(label(caption, 14f, captionColor, 500), top = 2)
@@ -77,7 +78,7 @@ class MainActivity : BaseActivity() {
         val goal = LearnerStats.dailyGoalXp
         val today = LearnerStats.todayXp
         place(horizontal {
-            place(icon(R.drawable.ic_target, Palette.text), 24, 24, end = 12)
+            place(icon(Icons.startTarget, Palette.primary), WRAP, WRAP, end = 12)
             place(label("Twój dzienny cel", 18f, Palette.text, 700), 0, WRAP, 1f)
             place(label("$today / $goal XP", 16f, Palette.primary, 700), WRAP, WRAP)
         })
@@ -103,7 +104,7 @@ class MainActivity : BaseActivity() {
             place(FrameLayout(context).apply {
                 background = roundedRect(Palette.heroIcon, 22)
                 rotation = -8f
-                place(icon(R.drawable.ic_hand, Palette.accentStrong), 34, 34, gravity = Gravity.CENTER)
+                place(icon(Icons.startHand, Palette.accentStrong), WRAP, WRAP, gravity = Gravity.CENTER)
             }, 68, 68, top = 4, end = 4)
         })
         place(horizontal {
@@ -113,36 +114,36 @@ class MainActivity : BaseActivity() {
         place(progressBar(answered.toFloat() / Curriculum.lessonQuestions.size, Palette.accentStrong, Palette.heroTrack), MATCH, 6, top = 10)
         place(ActionButton(context, Palette.heroButtonText).apply {
             background = roundedRect(Palette.surface, 18)
-            setContent("Kontynuuj lekcję", R.drawable.ic_arrow_right)
+            setContent("Kontynuuj lekcję", Icons.startArrowRight)
             onTap(18, Palette.ripple) { startActivity(Intent(this@MainActivity, LessonActivity::class.java)) }
         }, MATCH, 52, top = 22)
     }
 
     private fun shortcutsRow(): LinearLayout = horizontal {
         place(
-            shortcutCard(R.drawable.ic_scan, Palette.primary, Palette.tint, "Tłumacz miganie", "Pokaż znak. Poznaj jego znaczenie z AI.") { openTab(Tab.TRANSLATOR) },
+            shortcutCard(Icons.startScan, Palette.primary, Palette.tint, "Tłumacz miganie", "Pokaż znak. Poznaj jego znaczenie z AI.") { openTab(Tab.TRANSLATOR) },
             0, MATCH, 1f, end = 8,
         )
         place(
-            shortcutCard(R.drawable.ic_chart, Palette.accent, Palette.accentTint, "Statystyki", "Zobacz, jak rosną Twoje umiejętności.") { openTab(Tab.STATS) },
+            shortcutCard(Icons.startChart, Palette.accent, Palette.accentTint, "Statystyki", "Zobacz, jak rosną Twoje umiejętności.") { openTab(Tab.STATS) },
             0, MATCH, 1f, start = 8,
         )
     }
 
-    private fun shortcutCard(iconRes: Int, color: Int, background: Int, title: String, description: String, onClick: () -> Unit) =
+    private fun shortcutCard(iconSpec: IconSpec, color: Int, background: Int, title: String, description: String, onClick: () -> Unit) =
         card(padding = 18) {
             minimumHeight = context.dp(184)
-            place(iconTile(iconRes, color, background, iconSizeDp = 24, radiusDp = 14), 46, 46)
+            place(iconTile(iconSpec, color, background, radiusDp = 14), 46, 46)
             place(label(title, 19f, Palette.text, 700), top = 18)
             place(label(description, 14.5f, Palette.textSecondary), top = 6)
             spacer()
-            place(icon(R.drawable.ic_arrow_up_right, color), 18, 18, top = 14)
+            place(icon(Icons.startArrowUpRight, color), WRAP, WRAP, top = 14)
             onTap(24, Palette.ripple, onClick)
         }
 
     private fun debugButton() = ActionButton(this, Palette.primary).apply {
         background = roundedRect(Palette.tint, 18, Palette.primary, 1)
-        setContent("DEBUG: Kamera z MediaPipe", R.drawable.ic_camera, iconFirst = true)
+        setContent("DEBUG: Kamera z MediaPipe", Icons.trCamera, iconFirst = true)
         onTap(18, Palette.ripple) { startActivity(Intent(this@MainActivity, MediaPipeDebugActivity::class.java)) }
     }
 }

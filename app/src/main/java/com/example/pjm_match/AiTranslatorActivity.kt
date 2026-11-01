@@ -90,13 +90,13 @@ class AiTranslatorActivity : BaseActivity() {
             place(screenTitle("Tłumacz miganie", Palette.primary), top = 6)
             place(bodyText("Pokaż znak do kamery. AI pomoże Ci odkryć jego znaczenie."), top = 10)
             place(cameraCard(), MATCH, 330, top = 22)
-            translateButton = place(primaryButton("Rozpocznij tłumaczenie", R.drawable.ic_scan, iconFirst = true) {
+            translateButton = place(primaryButton("Rozpocznij tłumaczenie", Icons.trScan, iconFirst = true) {
                 onTranslateButtonClicked()
             }, MATCH, 56, top = 24)
             place(resultCard(), top = 24)
             place(horizontal {
                 gravity = Gravity.TOP
-                place(icon(R.drawable.ic_info, Palette.textSecondary), 20, 20, top = 1)
+                place(icon(Icons.trInfo, Palette.textSecondary), WRAP, WRAP, top = 1)
                 place(
                     label("Model działa na telefonie i analizuje ruch dłoni, rąk i twarzy. Zadbaj o dobre oświetlenie. AI może się mylić.", 14f, Palette.textSecondary),
                     0, WRAP, 1f, start = 12,
@@ -126,7 +126,7 @@ class AiTranslatorActivity : BaseActivity() {
             setBackgroundColor(Palette.overlay)
             pad(28)
             visibility = View.GONE
-            place(icon(R.drawable.ic_camera, Color.WHITE), 40, 40)
+            place(icon(Icons.permissionCamera, Color.WHITE), WRAP, WRAP)
             place(label("Wymagany jest dostęp do kamery, aby korzystać z tłumacza AI", 15f, Color.WHITE, 700) {
                 gravity = Gravity.CENTER
             }, WRAP, WRAP, top = 14)
@@ -140,28 +140,28 @@ class AiTranslatorActivity : BaseActivity() {
         place(horizontal {
             background = roundedRect(Palette.overlay, 100)
             pad(12, 7)
-            place(icon(R.drawable.ic_camera, Palette.accentStrong), 16, 16, end = 8)
+            place(icon(Icons.trCamera, Palette.accentStrong), WRAP, WRAP, end = 8)
             place(label("PODGLĄD NA ŻYWO", 12f, Color.WHITE, 700) { letterSpacing = 0.03f }, WRAP, WRAP)
         }, WRAP, WRAP, top = 16, start = 16)
 
         place(FrameLayout(context).apply {
             background = oval(Color.WHITE.withAlpha(0.9f))
             contentDescription = "Przełącz kamerę"
-            place(icon(R.drawable.ic_switch_camera, Palette.primary), 22, 22, gravity = Gravity.CENTER)
+            place(icon(Icons.trSwitchCamera, Palette.primary), WRAP, WRAP, gravity = Gravity.CENTER)
             onTap(22, Palette.ripple) { toggleCamera() }
         }, 44, 44, top = 14, end = 14, gravity = Gravity.TOP or Gravity.END)
 
         place(horizontal {
             background = roundedRect(Palette.overlay, 100)
             pad(18, 9)
-            place(icon(R.drawable.ic_scan_face, Palette.accentStrong), 18, 18, end = 8)
+            place(icon(Icons.trScanFace, Palette.accentStrong), WRAP, WRAP, end = 8)
             place(label("Dłonie i twarz w kadrze", 14f, Color.WHITE, 500), WRAP, WRAP)
         }, WRAP, WRAP, bottom = 16, gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
     }
 
     private fun resultCard(): LinearLayout = card(padding = 22) {
         place(horizontal {
-            place(icon(R.drawable.ic_sparkles, Palette.primary), 20, 20, end = 10)
+            place(icon(Icons.trSparkles, Palette.primary), WRAP, WRAP, end = 10)
             place(label("WYNIK AI", 13f, Palette.primary, 700) { letterSpacing = 0.04f }, 0, WRAP, 1f)
             statusBadge = place(pill("Gotowy", Palette.accent, Palette.accentTint, sizeSp = 13f), WRAP, WRAP)
             statusBadgeText = statusBadge.getChildAt(statusBadge.childCount - 1) as TextView
@@ -243,9 +243,9 @@ class AiTranslatorActivity : BaseActivity() {
         translationState = state
         translateButton.isEnabled = state != TranslationState.RECOGNIZING
         when (state) {
-            TranslationState.IDLE -> translateButton.setContent("Rozpocznij tłumaczenie", R.drawable.ic_scan, iconFirst = true)
-            TranslationState.RECORDING -> translateButton.setContent("Zakończ i rozpoznaj", R.drawable.ic_stop, iconFirst = true)
-            TranslationState.RECOGNIZING -> translateButton.setContent("Rozpoznawanie…", R.drawable.ic_sparkles, iconFirst = true)
+            TranslationState.IDLE -> translateButton.setContent("Rozpocznij tłumaczenie", Icons.trScan, iconFirst = true)
+            TranslationState.RECORDING -> translateButton.setContent("Zakończ i rozpoznaj", Icons.trScan, iconFirst = true)
+            TranslationState.RECOGNIZING -> translateButton.setContent("Rozpoznawanie…", Icons.trSparkles, iconFirst = true)
         }
         statusBadgeText.text = when (state) {
             TranslationState.IDLE -> "Gotowy"
