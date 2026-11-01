@@ -204,7 +204,7 @@ class StatsActivity : AppCompatActivity() {
         }
 
         val chartSubtitle = TextView(this).apply {
-            text = "12–18 października"
+            text = "Dzisiaj (kliknij, by powiększyć)"
             textSize = 11f
             setTextColor(Color.parseColor("#7E7A93"))
             setPadding(0, 2, 0, 0)
@@ -287,6 +287,13 @@ class StatsActivity : AppCompatActivity() {
 
         chartCard.addView(barGraphLayout)
         rootLayout.addView(chartCard)
+        
+        val openBarChartFullScreen = {
+            startActivity(Intent(this, BarChartFullScreenActivity::class.java))
+        }
+        
+        chartHeaderRow.setOnClickListener { openBarChartFullScreen() }
+        chartCard.setOnClickListener { openBarChartFullScreen() }
 
         val radarHeaderLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
