@@ -81,7 +81,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     private var lastFpsTimestamp = SystemClock.uptimeMillis()
     private var currentFps = 0
 
-    // Landmark Collection & Comparison Variables
     private var isRecording = false
     private var isCountingDown = false
     private var countdownTimer: CountDownTimer? = null
@@ -109,7 +108,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             )
         }
 
-        // 1. Camera Preview View
         previewView = PreviewView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -118,7 +116,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
         mainLayout.addView(previewView)
 
-        // 2. Skeleton Drawing Overlay
         skeletonOverlayView = SkeletonOverlayView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -127,7 +124,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
         mainLayout.addView(skeletonOverlayView)
 
-        // 3. Top Header Bar with Back Button & Title
         val topBarLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -144,7 +140,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         val backButton = Button(this).apply {
-            text = "← Powrót"
+            text = "Powrót"
             textSize = 13f
             setTextColor(Color.WHITE)
             val btnBg = GradientDrawable().apply {
@@ -159,7 +155,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         val headerTitle = TextView(this).apply {
-            text = "🛠️ MediaPipe Debugger"
+            text = "MediaPipe Debugger"
             textSize = 16f
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -168,7 +164,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         val switchCamButton = Button(this).apply {
-            text = "🔄"
+            text = "Obróć"
             textSize = 16f
             setTextColor(Color.WHITE)
             val btnBg = GradientDrawable().apply {
@@ -187,7 +183,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         topBarLayout.addView(switchCamButton)
         mainLayout.addView(topBarLayout)
 
-        // 4. Debug Controls Panel (Recording & Comparison Buttons)
         val controlsLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -202,7 +197,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         recordButton = Button(this).apply {
-            text = "🔴 Rozpocznij zbieranie punktów"
+            text = "Rozpocznij zbieranie punktów"
             textSize = 13f
             setTextColor(Color.WHITE)
             updateRecordButtonBg(false, this)
@@ -217,7 +212,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         compareButton = Button(this).apply {
-            text = "🎯 Porównaj ze wzorcem"
+            text = "Porównaj ze wzorcem"
             textSize = 13f
             setTextColor(Color.WHITE)
             val btnBg = GradientDrawable().apply {
@@ -238,7 +233,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         controlsLayout.addView(compareButton)
         mainLayout.addView(controlsLayout)
 
-        // 5. Debug HUD Overlay (Telemetry stats panel)
         val hudLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(28, 20, 28, 20)
@@ -300,7 +294,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
         mainLayout.addView(hudLayout)
 
-        // 6. Permission Request Overlay
         permissionOverlayLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -338,7 +331,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
         mainLayout.addView(permissionOverlayLayout)
 
-        // 7. Big Center Countdown Overlay
         countdownOverlayTextView = TextView(this).apply {
             text = ""
             textSize = 96f
@@ -426,7 +418,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             cornerRadius = 24f
         }
         button.background = btnBg
-        button.text = if (recording) "⏹️ Zatrzymaj zbieranie" else "🔴 Nagraj punkty"
+        button.text = if (recording) "Zatrzymaj zbieranie" else "Nagraj punkty"
     }
 
     private fun toggleRecording() {
@@ -452,16 +444,16 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             cornerRadius = 24f
         }
         recordButton.background = btnBg
-        recordButton.text = "❌ Anuluj odliczanie"
+        recordButton.text = "Anuluj odliczanie"
 
-        recordingStatsTextView.text = "⏳ Przygotuj się! Start za 5 sek."
+        recordingStatsTextView.text = "Przygotuj się! Start za 5 sek."
 
         countdownTimer?.cancel()
         countdownTimer = object : CountDownTimer(5000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 val secondsLeft = (millisUntilFinished / 1000 + 1).toInt()
                 countdownOverlayTextView.text = "$secondsLeft"
-                recordingStatsTextView.text = "⏳ Przygotuj się! Start za $secondsLeft sek."
+                recordingStatsTextView.text = "Przygotuj się! Start za $secondsLeft sek."
             }
 
             override fun onFinish() {
@@ -492,15 +484,15 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             val autoStopMs = refDurationMs + 1200L
 
             val autoStopSec = (autoStopMs / 1000f)
-            recordingStatsTextView.text = "🔴 NAGRYWANIE... (Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s)"
-            Toast.makeText(this, "🟢 NAGRYWANIE! Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s", Toast.LENGTH_SHORT).show()
+            recordingStatsTextView.text = "NAGRYWANIE... (Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s)"
+            Toast.makeText(this, "NAGRYWANIE! Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s", Toast.LENGTH_SHORT).show()
 
             autoStopTimer?.cancel()
             autoStopTimer = object : CountDownTimer(autoStopMs, 500) {
                 override fun onTick(millisUntilFinished: Long) {
                     if (isRecording) {
                         val secLeft = String.format(java.util.Locale.US, "%.1f", millisUntilFinished / 1000f)
-                        recordingStatsTextView.text = "🔴 ZBIERANIE: ${recordedFrames.size} klatek (Auto-Stop za ${secLeft}s)"
+                        recordingStatsTextView.text = "ZBIERANIE: ${recordedFrames.size} klatek (Auto-Stop za ${secLeft}s)"
                     }
                 }
 
@@ -511,8 +503,8 @@ class MediaPipeDebugActivity : AppCompatActivity() {
                 }
             }.start()
         } else {
-            recordingStatsTextView.text = "🔴 ZBIERANIE PUNKTÓW... (0 klatek)"
-            Toast.makeText(this, "🟢 NAGRYWANIE ROZPOCZĘTE! Wykonaj gest.", Toast.LENGTH_SHORT).show()
+            recordingStatsTextView.text = "ZBIERANIE PUNKTÓW... (0 klatek)"
+            Toast.makeText(this, "NAGRYWANIE ROZPOCZĘTE! Wykonaj gest.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -544,12 +536,10 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
         val trimmed = rawFrames.toMutableList()
 
-        // 1. Trim trailing frames with no hands detected
         while (trimmed.size > 5 && trimmed.last().handLandmarks.isEmpty()) {
             trimmed.removeAt(trimmed.size - 1)
         }
 
-        // 2. Trim trailing frames where hand is lowering towards button
         val checkCount = minOf(12, trimmed.size / 3)
         if (trimmed.size > 15 && checkCount > 3) {
             val lastFrame = trimmed.last()
@@ -576,7 +566,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
         val rawDtwDistance = calculateDtwDistance(activeSample, activeReference)
 
-        // Normalizacja zmieniła skalę odległości (są teraz większe) -> Przesuwamy bramkę odrzucenia na 2.0f
         if (rawDtwDistance > 2.0f) {
             val rejectMessage = "Ten gest jest całkowicie niezgodny ze wzorcem.\n\n" +
                                 "Zbyt duża różnica w ułożeniu dłoni lub trajektorii.\n" +
@@ -584,24 +573,22 @@ class MediaPipeDebugActivity : AppCompatActivity() {
                                 "Spróbuj ponownie!"
             
             AlertDialog.Builder(this)
-                .setTitle("❌ Zły gest (Odrzucono)")
+                .setTitle("Zły gest (Odrzucono)")
                 .setMessage(rejectMessage)
                 .setPositiveButton("Zamknij", null)
                 .show()
             return
         }
 
-        // Apply 5% tolerance margin discount to DTW cost
         val adjustedDtwDistance = rawDtwDistance * 0.95f
-        // Dostosowanie mnożnika punktacji do nowej, większej skali po normalizacji barkami (z 1.8f na 0.45f)
         val similarityPercent = (max(0f, (1f - adjustedDtwDistance * 0.45f) * 100f) + 5f).coerceIn(0f, 100f)
         val scorePoints = similarityPercent.toInt().coerceIn(0, 100)
 
         val stars = when {
-            scorePoints >= 90 -> "⭐⭐⭐⭐⭐ (Doskonale!)"
-            scorePoints >= 75 -> "⭐⭐⭐⭐☆ (Bardzo dobrze!)"
-            scorePoints >= 60 -> "⭐⭐⭐☆☆ (Dobry wynik)"
-            else -> "⭐⭐☆☆☆ (Wymaga ćwiczeń)"
+            scorePoints >= 90 -> "(Doskonale!)"
+            scorePoints >= 75 -> "(Bardzo dobrze!)"
+            scorePoints >= 60 -> "(Dobry wynik)"
+            else -> "(Wymaga ćwiczeń)"
         }
 
         val speedInfo = analyzeUserFriendlySpeed(activeSample, activeReference)
@@ -614,37 +601,37 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val jerkSmoothnessInfo = analyzeMovementJerkSmoothness(activeSample)
 
         val dialogMessage = StringBuilder().apply {
-            append("🏆 TWÓJ WYNIK: $scorePoints / 100 pkt\n")
+            append("TWÓJ WYNIK: $scorePoints / 100 pkt\n")
             append("Ocena: $stars\n")
-            append("ℹ️ (Uwzględniono 5% margines tolerancji)\n\n")
+            append("(Uwzględniono 5% margines tolerancji)\n\n")
 
-            append("📝 WSKAZÓWKI I OCENA GESTU:\n\n")
+            append("WSKAZÓWKI I OCENA GESTU:\n\n")
 
-            append("1. ⚡ TEMPO I CZAS TRWANIA:\n")
+            append("1. TEMPO I CZAS TRWANIA:\n")
             append("${speedInfo.first}\n")
             append("• ${speedInfo.second}\n\n")
 
-            append("2. 🌊 PŁYNOŚĆ RUCHU:\n")
+            append("2. PŁYNOŚĆ RUCHU:\n")
             append("${smoothnessInfo.first}\n")
             append("• ${smoothnessInfo.second}\n\n")
 
-            append("3. 🎯 PRECYZJA UŁOŻENIA DŁONI:\n")
+            append("3. PRECYZJA UŁOŻENIA DŁONI:\n")
             append("${trajectoryInfo.first}\n")
             append("• ${trajectoryInfo.second}\n\n")
 
-            append("4. 📐 TRAJEKTORIA I PEŁNOŚĆ RUCHU (DTW / Fréchet):\n")
+            append("4. TRAJEKTORIA I PEŁNOŚĆ RUCHU (DTW / Fréchet):\n")
             append("${frechetTrajectoryInfo.first}\n")
             append("• ${frechetTrajectoryInfo.second}\n\n")
 
-            append("5. 🧭 ORIENTACJA DŁONI (Kąt nachylenia):\n")
+            append("5. ORIENTACJA DŁONI (Kąt nachylenia):\n")
             append("${orientationInfo.first}\n")
             append("• ${orientationInfo.second}\n\n")
 
-            append("6. ⚖️ ASYMETRIA PRĘDKOŚCI (Znaki oburęczne):\n")
+            append("6. ASYMETRIA PRĘDKOŚCI (Znaki oburęczne):\n")
             append("${asymmetryInfo.first}\n")
             append("• ${asymmetryInfo.second}\n\n")
 
-            append("7. 🤖 GŁADKOŚĆ RUCHU (Szarpnięcia / Pochodna przyspieszenia):\n")
+            append("7. GŁADKOŚĆ RUCHU (Szarpnięcia / Pochodna przyspieszenia):\n")
             append("${jerkSmoothnessInfo.first}\n")
             append("• ${jerkSmoothnessInfo.second}\n\n")
 
@@ -652,7 +639,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }.toString()
 
         AlertDialog.Builder(this)
-            .setTitle("✨ Podsumowanie Twojego Gestu")
+            .setTitle("Podsumowanie Twojego Gestu")
             .setMessage(dialogMessage)
             .setPositiveButton("Ustaw jako nowy wzorzec") { _, _ ->
                 referenceSequence = sample.toList()
@@ -713,13 +700,12 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val refSec = String.format(java.util.Locale.US, "%.1f sek.", refDurationMs / 1000f)
 
         val ratio = sampleDurationMs.toFloat() / refDurationMs.toFloat()
-        // Zmniejszenie tolerancji z 10f na 5f w ocenie tempa
         val tempoScore = (100 - kotlin.math.abs(1f - ratio) * 100 + 5f).toInt().coerceIn(0, 100)
 
         val mainText = when {
-            ratio < 0.70f -> "⚡ Wykonano za szybko (tempo $tempoScore%)"
-            ratio > 1.35f -> "🐢 Wykonano za wolno (tempo $tempoScore%)"
-            else -> "🎯 Świetne tempo ($tempoScore% dopasowania)"
+            ratio < 0.70f -> "Wykonano za szybko (tempo $tempoScore%)"
+            ratio > 1.35f -> "Wykonano za wolno (tempo $tempoScore%)"
+            else -> "Świetne tempo ($tempoScore% dopasowania)"
         }
 
         val advice = when {
@@ -748,13 +734,12 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         val stdDev = sqrt(varianceSum / velocities.size)
-        // Dostosowanie mnożnika płynności do znormalizowanej skali barków (stdDev jest teraz średnio wyższe)
         val smoothnessScorePercent = (max(0f, (1f - stdDev * 3.5f) * 100f) + 10f).toInt().coerceIn(0, 100)
 
         val mainText = when {
-            smoothnessScorePercent >= 80 -> "🌊 Płynność ruchu: $smoothnessScorePercent% (Wysoka)"
-            smoothnessScorePercent >= 60 -> "👍 Płynność ruchu: $smoothnessScorePercent% (Dobra)"
-            else -> "⚠️ Płynność ruchu: $smoothnessScorePercent% (Wymaga wygładzenia)"
+            smoothnessScorePercent >= 80 -> "Płynność ruchu: $smoothnessScorePercent% (Wysoka)"
+            smoothnessScorePercent >= 60 -> "Płynność ruchu: $smoothnessScorePercent% (Dobra)"
+            else -> "Płynność ruchu: $smoothnessScorePercent% (Wymaga wygładzenia)"
         }
 
         val advice = when {
@@ -769,10 +754,8 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     private fun analyzeUserFriendlyTrajectory(dtwDistance: Float, sample: List<FrameSkeleton>, reference: List<FrameSkeleton>): Pair<String, String> {
         val adjustedDtwDistance = dtwDistance * 0.90f
         
-        // Dostosowanie mnożnika oceny trajektorii po normalizacji (z 4.0x na 0.9x)
         val shapeScorePercent = (max(0f, (1f - adjustedDtwDistance * 0.9f) * 100f) + 10f).toInt().coerceIn(0, 100)
 
-        // Wyznaczenie problemów przestrzennych (wysokość, start/koniec)
         val adviceParts = mutableListOf<String>()
 
         if (sample.isNotEmpty() && reference.isNotEmpty()) {
@@ -790,7 +773,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             if (endDiff > 0.35f) adviceParts.add("kończysz gest za nisko")
             else if (endDiff < -0.35f) adviceParts.add("kończysz gest za wysoko")
 
-            // Pełność ruchu (Bounding Box obszaru aktywnego)
             val sMinY = sample.map { getHandCenterY(it) }.minOrNull() ?: 0f
             val sMaxY = sample.map { getHandCenterY(it) }.maxOrNull() ?: 0f
             val rMinY = reference.map { getHandCenterY(it) }.minOrNull() ?: 0f
@@ -798,9 +780,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             val sRange = sMaxY - sMinY
             val rRange = rMaxY - rMinY
 
-            // Bardzo krótki gest "JA" ma we wzorcu mikroskopijny zasięg ruchu Y (np. rRange = 0.05).
-            // Prawa fizyki i szum MediaPipe sprawiają, że człowiek ma problem powtórzyć aż tak sztywny ruch.
-            // Zmieniamy progi ze sztywnych mnożników na mnożniki powiększone o "stały próg tolerancji (padding)"
             val minAcceptableRange = (rRange * 0.4f) - 0.05f
             val maxAcceptableRange = (rRange * 2.5f) + 0.15f
 
@@ -809,9 +788,9 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         val mainText = when {
-            shapeScorePercent >= 80 -> "✨ Trajektoria: $shapeScorePercent% (Wysoka)"
-            shapeScorePercent >= 60 -> "📐 Trajektoria: $shapeScorePercent% (Dobra)"
-            else -> "❌ Trajektoria: $shapeScorePercent% (Niska)"
+            shapeScorePercent >= 80 -> "Trajektoria: $shapeScorePercent% (Wysoka)"
+            shapeScorePercent >= 60 -> "Trajektoria: $shapeScorePercent% (Dobra)"
+            else -> "Trajektoria: $shapeScorePercent% (Niska)"
         }
 
         val advice = if (shapeScorePercent >= 80 && adviceParts.isEmpty()) {
@@ -889,7 +868,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         val frechetStr = String.format(java.util.Locale.US, "%.2f", frechetDist)
-        val mainText = "📐 Ocena algorytmu: $expertScale/5 ($scorePercent%) | Fréchet: $frechetStr"
+        val mainText = "Ocena algorytmu: $expertScale/5 ($scorePercent%) | Fréchet: $frechetStr"
 
         val advice = if (issues.isEmpty()) {
             "Pełność ruchu oraz punkty początkowe i końcowe są zgodne ze wzorcem."
@@ -932,7 +911,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         if (sampleNormals.isEmpty() || refNormals.isEmpty()) {
-            return Pair("🧭 Orientacja dłoni: B/D", "Brak wykrytych dłoni do obliczenia kąta (Palm Surface Angle).")
+            return Pair("Orientacja dłoni: B/D", "Brak wykrytych dłoni do obliczenia kąta (Palm Surface Angle).")
         }
 
         val steps = minOf(sampleNormals.size, refNormals.size)
@@ -967,9 +946,9 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val angleStr = String.format(java.util.Locale.US, "%.1f°", rawAvgAngleDiff)
 
         val mainText = when {
-            orientationScore >= 80 -> "🧭 Orientacja dłoni: $orientationScore% (Odchylenie: $angleStr)"
-            orientationScore >= 60 -> "📐 Orientacja dłoni: $orientationScore% (Odchylenie: $angleStr)"
-            else -> "🔄 Orientacja dłoni: $orientationScore% (Błąd kąta: $angleStr)"
+            orientationScore >= 80 -> "Orientacja dłoni: $orientationScore% (Odchylenie: $angleStr)"
+            orientationScore >= 60 -> "Orientacja dłoni: $orientationScore% (Odchylenie: $angleStr)"
+            else -> "Orientacja dłoni: $orientationScore% (Błąd kąta: $angleStr)"
         }
 
         val advice = when {
@@ -1014,14 +993,14 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
         if (refTwoHandedCount < reference.size * 0.25f) {
             return if (sampleTwoHandedCount > sample.size * 0.4f) {
-                Pair("⚠️ Znak jednoręczny (Wykryto 2 dłonie)", "Wzorzec jest jednoręczny, a wykryto ruch obu dłoni.")
+                Pair("Znak jednoręczny (Wykryto 2 dłonie)", "Wzorzec jest jednoręczny, a wykryto ruch obu dłoni.")
             } else {
-                Pair("✋ Znak jednoręczny: Zgodny", "Asymetria prędkości nie dotyczy (znak wykonywany jedną ręką).")
+                Pair("Znak jednoręczny: Zgodny", "Asymetria prędkości nie dotyczy (znak wykonywany jedną ręką).")
             }
         }
 
         if (sampleTwoHandedCount < 2) {
-            return Pair("❌ Brak drugiej dłoni (0%)", "Ten znak jest oburęczny! Użyj obu rąk.")
+            return Pair("Brak drugiej dłoni (0%)", "Ten znak jest oburęczny! Użyj obu rąk.")
         }
 
         val (sampleLeftVel, sampleRightVel) = calculateLeftRightVelocities(sample)
@@ -1040,9 +1019,9 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val sRightStr = String.format(java.util.Locale.US, "%.2f", sampleRightVel)
 
         val mainText = when {
-            symmetryScore >= 80 -> "⚖️ Symetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
-            symmetryScore >= 60 -> "👐 Symetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
-            else -> "⚠️ Asymetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
+            symmetryScore >= 80 -> "Symetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
+            symmetryScore >= 60 -> "Symetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
+            else -> "Asymetria prędkości: $symmetryScore% (v_L: $sLeftStr | v_P: $sRightStr)"
         }
 
         val advice = when {
@@ -1096,7 +1075,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     }
 
     private fun analyzeMovementJerkSmoothness(sample: List<FrameSkeleton>): Pair<String, String> {
-        if (sample.size <= 4) return Pair("🤖 Gładkość (Jerk): B/D", "Za mało klatek do obliczenia pochodnej przyspieszenia.")
+        if (sample.size <= 4) return Pair("Gładkość (Jerk): B/D", "Za mało klatek do obliczenia pochodnej przyspieszenia.")
 
         val rawVelocities = mutableListOf<Float>()
         for (i in 0 until sample.size - 1) {
@@ -1120,7 +1099,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             jerks.add(abs(accelerations[i + 1] - accelerations[i]))
         }
 
-        if (jerks.isEmpty()) return Pair("🤖 Gładkość (Jerk): B/D", "Brak danych o zmianie przyspieszenia.")
+        if (jerks.isEmpty()) return Pair("Gładkość (Jerk): B/D", "Brak danych o zmianie przyspieszenia.")
 
         val sortedJerks = jerks.sorted()
         val filteredJerks = if (sortedJerks.size > 4) sortedJerks.dropLast(1) else sortedJerks
@@ -1133,9 +1112,9 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val jerkStr = String.format(java.util.Locale.US, "%.3f", meanJerk)
 
         val mainText = when {
-            jerkScorePercent >= 80 -> "🌊 Gładkość (Jerk): $jerkScorePercent% (Płynny | Jerk: $jerkStr)"
-            jerkScorePercent >= 60 -> "👍 Gładkość (Jerk): $jerkScorePercent% (Lekkie wahania | Jerk: $jerkStr)"
-            else -> "🤖 Gładkość (Jerk): $jerkScorePercent% (Szarpany | Jerk: $jerkStr)"
+            jerkScorePercent >= 80 -> "Gładkość (Jerk): $jerkScorePercent% (Płynny | Jerk: $jerkStr)"
+            jerkScorePercent >= 60 -> "Gładkość (Jerk): $jerkScorePercent% (Lekkie wahania | Jerk: $jerkStr)"
+            else -> "Gładkość (Jerk): $jerkScorePercent% (Szarpany | Jerk: $jerkStr)"
         }
 
         val advice = when {
@@ -1188,7 +1167,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         var totalDist = 0f
         var count = 0
 
-        // Ramiona i tułów (Pose) - niska waga, tylko kontekst ułożenia
         val poseWeight = 0.3f
         val poseMinLen = minOf(f1.poseLandmarks.size, f2.poseLandmarks.size)
         for (i in 0 until poseMinLen) {
@@ -1201,7 +1179,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             count += 1 
         }
 
-        // PJM to głównie DŁONIE! Ogromny priorytet (15x ważniejsze od tułowia)
         val handWeight = 8.0f
         
         val handMinLen = minOf(f1.handLandmarks.size, f2.handLandmarks.size)
@@ -1213,8 +1190,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
                 val p1 = h1[i]
                 val p2 = h2[i]
                 
-                // Karzemy mocno za błędy przestrzenne w płaszczyźnie ekranu (x, y)
-                val dx = (p1.x - p2.x) * 1.5f 
+                val dx = (p1.x - p2.x) * 1.5f
                 val dy = (p1.y - p2.y) * 1.5f
                 val dz = (p1.z - p2.z) * 0.8f 
                 totalDist += sqrt(dx * dx + dy * dy + dz * dz) * handWeight
@@ -1222,8 +1198,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             }
         }
 
-        // Łagodniejsza kara za zgubienie dłoni (częsty problem MediaPipe)
-        // Jeśli algorytm zgubi dłoń (Motion Blur), łagodzimy błąd z 15.0 do 1.5
         if (f1.handLandmarks.isEmpty() && f2.handLandmarks.isNotEmpty()) {
             totalDist += 1.5f 
             count += 1
@@ -1232,7 +1206,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             count += 1
         }
         
-        // Ignorowanie braku dłoni u obu (zakładamy zgodność)
         if (f1.handLandmarks.isEmpty() && f2.handLandmarks.isEmpty()) {
             // totalDist += 0f
             count += 1
@@ -1271,18 +1244,13 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             recordedFrames.add(FrameSkeleton(SystemClock.uptimeMillis(), normalizedPose, normalizedHands))
             val frameCountNow = recordedFrames.size
             val totalPointsNow = recordedFrames.sumOf { f -> f.poseLandmarks.size + f.handLandmarks.sumOf { h -> h.size } }
-            recordingStatsTextView.text = "🔴 ZBIERANIE PUNKTÓW: $frameCountNow klatek ($totalPointsNow pkt)"
+            recordingStatsTextView.text = "ZBIERANIE PUNKTÓW: $frameCountNow klatek ($totalPointsNow pkt)"
         }
     }
 
-    /**
-     * Normalizuje szkielet, aby był odporny na przesunięcie w kadrze (prawo/lewo/góra/dół) 
-     * oraz na odległość od kamery (skalowanie).
-     */
     private fun normalizeSkeletonScale(pose: List<NormalizedLandmark>, hands: List<List<NormalizedLandmark>>): Pair<List<Point3D>, List<List<Point3D>>> {
         if (pose.size < 13) return Pair(emptyList(), emptyList()) // Wymagamy barków do normalizacji
 
-        // 1. Znalezienie środka odniesienia (Center of Mass) - Środek między barkami (indeksy 11 i 12)
         val leftShoulder = pose[11]
         val rightShoulder = pose[12]
         
@@ -1290,22 +1258,15 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val originY = (leftShoulder.y() + rightShoulder.y()) / 2f
         val originZ = (leftShoulder.z() + rightShoulder.z()) / 2f
 
-        // 2. Skala referencyjna - Odległość między barkami (uwzględnia Aspect Ratio kamery / ekranu telefonu!)
-        // MediaPipe zwraca NormalizedLandmark, gdzie X i Y to procenty 0.0 - 1.0 ekranu.
-        // Jeśli telefon ma ekran 16:9 (wąski i wysoki), a referencja (JA.mp4) była w 1:1, to ruch dłoni będzie się rozciągał!
         val dx = leftShoulder.x() - rightShoulder.x()
-        // Aby zachować proporcje mimo różnych proporcji ekranu telefonu, wprowadzamy korektę współczynnika proporcji (np. 16/9)
-        // Zakładamy typowy format kamery pionowej 16:9 w telefonie (Y jest dłuższe niż X o ~1.77)
-        val aspectRatioCorrection = 1.77f 
+        val aspectRatioCorrection = 1.77f
         val dy = (leftShoulder.y() - rightShoulder.y()) * aspectRatioCorrection
         
         val dz = leftShoulder.z() - rightShoulder.z()
         val shoulderWidth = sqrt(dx * dx + dy * dy + dz * dz)
         
-        // Zabezpieczenie przed dzieleniem przez 0
         val scale = if (shoulderWidth > 0.01f) 1.0f / shoulderWidth else 1.0f
 
-        // 3. Aplikowanie transformacji dla punktów ciała (odrzucamy twarz 0..10)
         val normalizedPose = pose.subList(11, pose.size).map {
             Point3D(
                 ((it.x() - originX) * scale),
@@ -1314,7 +1275,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             )
         }
 
-        // 4. Aplikowanie transformacji dla punktów dłoni
         val normalizedHands = hands.map { hand ->
             hand.map {
                 Point3D(
@@ -1608,7 +1568,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             val h = height.toFloat()
             if (w <= 0 || h <= 0) return
 
-            // Draw Pose Skeleton (excluding face landmarks 0..10)
             poseLandmarksList?.forEach { landmarkList ->
                 for ((start, end) in poseConnections) {
                     if (start < landmarkList.size && end < landmarkList.size) {
@@ -1625,7 +1584,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
                 }
             }
 
-            // Draw Hand Skeleton
             handLandmarksList?.forEach { landmarkList ->
                 for ((start, end) in handConnections) {
                     if (start < landmarkList.size && end < landmarkList.size) {
