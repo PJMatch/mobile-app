@@ -14,6 +14,10 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
+
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 }
 
@@ -29,5 +33,6 @@ dependencies {
     implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
 
     implementation("com.google.mediapipe:tasks-vision:0.10.20")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 }
 

@@ -34,13 +34,10 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
-import com.google.mediapipe.tasks.core.BaseOptions
-import com.google.mediapipe.tasks.vision.core.RunningMode
-import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
-import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 class AiTranslatorActivity : AppCompatActivity() {
 
@@ -53,19 +50,18 @@ class AiTranslatorActivity : AppCompatActivity() {
     private var imageAnalysis: ImageAnalysis? = null
     private val cameraExecutor = Executors.newSingleThreadExecutor()
 
-    private var poseLandmarker: PoseLandmarker? = null
-    private var handLandmarker: HandLandmarker? = null
+    private var landmarkExtractor: PjmLandmarkExtractor? = null
+    private var signClassifier: PjmSignClassifier? = null
+    private val recognitionExecutor = Executors.newSingleThreadExecutor()
 
-    private var currentSignIndex = 0
+    private enum class TranslationState { IDLE, RECORDING, RECOGNIZING }
 
-    private val recognizedSigns = listOf(
-        Pair("Dzień dobry", "96%"),
-        Pair("Dziękuję", "98%"),
-        Pair("Jak się masz?", "94%"),
-        Pair("Cześć", "97%"),
-        Pair("Do widzenia", "95%"),
-    )
+    private var translationState = TranslationState.IDLE
 
+    @Volatile
+    private var activeRecording: PjmSignRecording? = null
+
+    private lateinit var translateButton: Button
     private lateinit var resultText: TextView
     private lateinit var confidenceText: TextView
     private lateinit var progressFillView: View
@@ -132,21 +128,7 @@ class AiTranslatorActivity : AppCompatActivity() {
         titleTextLayout.addView(subtitleTag)
         titleTextLayout.addView(mainTitle)
 
-        val topRightSparkleBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#EBE9FC"))
-            cornerRadius = 48f
-        }
-
-        val topRightSparkleBtn = TextView(this).apply {
-            text = "✨"
-            textSize = 20f
-            gravity = Gravity.CENTER
-            background = topRightSparkleBg
-            layoutParams = LinearLayout.LayoutParams(96, 96)
-        }
-
         headerLayout.addView(titleTextLayout)
-        headerLayout.addView(topRightSparkleBtn)
 
         val descriptionText = TextView(this).apply {
             text = "Pokaż znak do kamery. AI pomoże Ci odkryć jego znaczenie."
@@ -246,30 +228,6 @@ class AiTranslatorActivity : AppCompatActivity() {
         }
         cameraCard.addView(permissionOverlayLayout)
 
-        // Top-Left Badge: "📷 PODGLĄD DEMONSTRACYJNY"
-        val demoBadgeBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#CC130C2E"))
-            cornerRadius = 32f
-        }
-
-        val demoBadge = TextView(this).apply {
-            text = "📷 PODGLĄD DEMONSTRACYJNY"
-            textSize = 10f
-            setTextColor(Color.WHITE)
-            setTypeface(null, Typeface.BOLD)
-            background = demoBadgeBg
-            setPadding(28, 16, 28, 16)
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.TOP or Gravity.START
-                topMargin = dpToPx(this@AiTranslatorActivity, 16)
-                marginStart = dpToPx(this@AiTranslatorActivity, 16)
-            }
-        }
-        cameraCard.addView(demoBadge)
-
         // Top-Right Button: Switch Camera (Front/Back)
         val switchCamBg = GradientDrawable().apply {
             setColor(Color.parseColor("#D0FFFFFF"))
@@ -326,8 +284,8 @@ class AiTranslatorActivity : AppCompatActivity() {
             cornerRadius = dpToPx(this@AiTranslatorActivity, 28).toFloat()
         }
 
-        val translateButton = Button(this).apply {
-            text = "⛶  Rozpocznij tłumaczenie"
+        translateButton = Button(this).apply {
+            text = "●  Nagraj znak"
             textSize = 16f
             setTextColor(Color.WHITE)
             background = translateButtonBg
@@ -340,7 +298,7 @@ class AiTranslatorActivity : AppCompatActivity() {
                 bottomMargin = 28
             }
             setOnClickListener {
-                cycleNextRecognizedSign()
+                onTranslateButtonClicked()
             }
         }
         rootLayout.addView(translateButton)
@@ -386,7 +344,7 @@ class AiTranslatorActivity : AppCompatActivity() {
         }
 
         val exampleBadge = TextView(this).apply {
-            text = "Przykład"
+            text = "Offline"
             textSize = 12f
             setTextColor(Color.parseColor("#D3821C"))
             setTypeface(null, Typeface.BOLD)
@@ -399,7 +357,7 @@ class AiTranslatorActivity : AppCompatActivity() {
 
         // Recognized text
         resultText = TextView(this).apply {
-            text = "Rozpoznano: ${recognizedSigns[0].first}"
+            text = "Rozpoznano: —"
             textSize = 20f
             setTextColor(Color.parseColor("#1C1635"))
             setTypeface(null, Typeface.BOLD)
@@ -421,7 +379,7 @@ class AiTranslatorActivity : AppCompatActivity() {
         }
 
         confidenceText = TextView(this).apply {
-            text = recognizedSigns[0].second
+            text = "—"
             textSize = 14f
             setTextColor(Color.parseColor("#D3821C"))
             setTypeface(null, Typeface.BOLD)
@@ -440,6 +398,7 @@ class AiTranslatorActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             background = progressTrackBg
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 16)
+            weightSum = 1f
         }
 
         val progressFillBg = GradientDrawable().apply {
@@ -449,7 +408,7 @@ class AiTranslatorActivity : AppCompatActivity() {
 
         progressFillView = View(this).apply {
             background = progressFillBg
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.96f)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0f)
         }
 
         progressTrack.addView(progressFillView)
@@ -476,7 +435,7 @@ class AiTranslatorActivity : AppCompatActivity() {
         }
 
         val disclaimerText = TextView(this).apply {
-            text = "Przykładowy kadr i wynik. To podgląd działania, nie tłumaczenie na żywo. AI może się mylić."
+            text = "Model analizuje Twój ruch dłoni i rąk po rozpoczęciu nagrywania i rozpoczyna jego przetwarzanie. Upewnij się, że dłonie i sylwetka są dobrze oświetlone w kadrze."
             textSize = 12f
             setTextColor(Color.parseColor("#7E7A93"))
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -562,67 +521,94 @@ class AiTranslatorActivity : AppCompatActivity() {
 
         setContentView(mainContainer)
 
+        setupSignRecognition()
         setupMediaPipe()
         checkAndStartCamera()
     }
 
-    private fun setupMediaPipe() {
+    private fun setupSignRecognition() {
         try {
-            val poseBaseOptions = BaseOptions.builder()
-                .setModelAssetPath("pose_landmarker_lite.task")
-                .build()
-
-            val poseOptions = PoseLandmarker.PoseLandmarkerOptions.builder()
-                .setBaseOptions(poseBaseOptions)
-                .setRunningMode(RunningMode.LIVE_STREAM)
-                .setResultListener { result, _ ->
-                    runOnUiThread {
-                        skeletonOverlayView.setPoseLandmarks(result.landmarks())
-                    }
-                }
-                .setErrorListener { error ->
-                    error.printStackTrace()
-                }
-                .build()
-
-            poseLandmarker = PoseLandmarker.createFromOptions(this, poseOptions)
-
-            val handBaseOptions = BaseOptions.builder()
-                .setModelAssetPath("hand_landmarker.task")
-                .build()
-
-            val handOptions = HandLandmarker.HandLandmarkerOptions.builder()
-                .setBaseOptions(handBaseOptions)
-                .setRunningMode(RunningMode.LIVE_STREAM)
-                .setNumHands(2)
-                .setResultListener { result, _ ->
-                    runOnUiThread {
-                        skeletonOverlayView.setHandLandmarks(result.landmarks())
-                    }
-                }
-                .setErrorListener { error ->
-                    error.printStackTrace()
-                }
-                .build()
-
-            handLandmarker = HandLandmarker.createFromOptions(this, handOptions)
-        } catch (e: Exception) {
-            e.printStackTrace()
+            signClassifier = PjmSignClassifier(this, signs)
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            Toast.makeText(this, "Nie udało się wczytać modelu PJM", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun cycleNextRecognizedSign() {
-        currentSignIndex = (currentSignIndex + 1) % recognizedSigns.size
-        val (sign, confidence) = recognizedSigns[currentSignIndex]
-        resultText.text = "Rozpoznano: $sign"
-        confidenceText.text = confidence
+    private fun setupMediaPipe() {
+        try {
+            landmarkExtractor = PjmLandmarkExtractor(this) { skeleton ->
+                skeletonOverlayView.setSkeleton(skeleton)
+                activeRecording?.add(skeleton.timestampMs, skeleton.toModelFrame())
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            Toast.makeText(this, "MediaPipe niedostępne na tym urządzeniu", Toast.LENGTH_LONG).show()
+        }
+    }
 
-        val percentFloat = confidence.replace("%", "").toFloatOrNull()?.div(100f) ?: 0.95f
-        progressFillView.layoutParams = (progressFillView.layoutParams as LinearLayout.LayoutParams).apply {
-            weight = percentFloat
+    private fun onTranslateButtonClicked() {
+        when (translationState) {
+            TranslationState.IDLE -> startRecording()
+            TranslationState.RECORDING -> stopRecordingAndRecognize()
+            TranslationState.RECOGNIZING -> Unit
+        }
+    }
+
+    private fun startRecording() {
+        if (signClassifier == null || landmarkExtractor == null) {
+            Toast.makeText(this, "Tłumacz jest niedostępny na tym urządzeniu", Toast.LENGTH_SHORT).show()
+            return
+        }
+        activeRecording = PjmSignRecording()
+        setTranslationState(TranslationState.RECORDING)
+    }
+
+    private fun stopRecordingAndRecognize() {
+        val recording = activeRecording ?: return
+        activeRecording = null
+        val clip = recording.resampledToTrainingFps().take(PjmSignClassifier.MAX_FRAMES)
+        if (clip.size < PjmSignClassifier.MIN_FRAMES) {
+            Toast.makeText(this, "Nagranie jest za krótkie", Toast.LENGTH_SHORT).show()
+            setTranslationState(TranslationState.IDLE)
+            return
         }
 
-        Toast.makeText(this, "Aanalizowano kadr z kamery", Toast.LENGTH_SHORT).show()
+        val classifier = signClassifier ?: return
+        setTranslationState(TranslationState.RECOGNIZING)
+        recognitionExecutor.execute {
+            val prediction = runCatching { classifier.classify(clip) }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                prediction
+                    .onSuccess { showRecognizedSign(it) }
+                    .onFailure {
+                        it.printStackTrace()
+                        Toast.makeText(this, "Błąd rozpoznawania znaku", Toast.LENGTH_SHORT).show()
+                    }
+                setTranslationState(TranslationState.IDLE)
+            }
+        }
+    }
+
+    private fun setTranslationState(state: TranslationState) {
+        translationState = state
+        translateButton.isEnabled = state != TranslationState.RECOGNIZING
+        translateButton.text = when (state) {
+            TranslationState.IDLE -> "●  Nagraj znak"
+            TranslationState.RECORDING -> "■  Zakończ i rozpoznaj"
+            TranslationState.RECOGNIZING -> "Rozpoznawanie…"
+        }
+    }
+
+    private fun showRecognizedSign(prediction: SignPrediction) {
+        val recognized = prediction.gloss != PjmSignClassifier.BLANK_GLOSS
+        val confidence = if (recognized) prediction.confidence else 0f
+        resultText.text = if (recognized) "Rozpoznano: ${prediction.gloss}" else "Nie rozpoznano znaku"
+        confidenceText.text = if (recognized) "${(confidence * 100).roundToInt()}%" else "—"
+        progressFillView.layoutParams = (progressFillView.layoutParams as LinearLayout.LayoutParams).apply {
+            weight = confidence
+        }
     }
 
     private fun checkAndStartCamera() {
@@ -697,28 +683,18 @@ class AiTranslatorActivity : AppCompatActivity() {
 
     @OptIn(ExperimentalGetImage::class)
     private fun processImageProxy(imageProxy: ImageProxy) {
-        val frameTime = SystemClock.uptimeMillis()
-        val bitmap = imageProxy.toBitmap()
-
-        val isFront = (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA)
-        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-
-        val matrix = Matrix().apply {
-            postRotate(rotationDegrees.toFloat())
-            if (isFront) {
-                postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
-            }
-        }
-
-        val rotatedBitmap = Bitmap.createBitmap(
-            bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
-        )
-
-        val mpImage = BitmapImageBuilder(rotatedBitmap).build()
-
         try {
-            poseLandmarker?.detectAsync(mpImage, frameTime)
-            handLandmarker?.detectAsync(mpImage, frameTime)
+            val bitmap = imageProxy.toBitmap()
+            val matrix = Matrix().apply { postRotate(imageProxy.imageInfo.rotationDegrees.toFloat()) }
+            val uprightBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+
+            skeletonOverlayView.setImageInfo(
+                uprightBitmap.width,
+                uprightBitmap.height,
+                mirror = cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA
+            )
+
+            landmarkExtractor?.detectAsync(uprightBitmap, SystemClock.uptimeMillis())
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
@@ -737,9 +713,13 @@ class AiTranslatorActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        cameraProvider?.unbindAll()
         cameraExecutor.shutdown()
-        poseLandmarker?.close()
-        handLandmarker?.close()
+        cameraExecutor.awaitTermination(500, TimeUnit.MILLISECONDS)
+        landmarkExtractor?.close()
+        recognitionExecutor.shutdown()
+        recognitionExecutor.awaitTermination(2, TimeUnit.SECONDS)
+        signClassifier?.close()
     }
 
     private fun dpToPx(context: Context, dp: Int): Int {
@@ -751,8 +731,17 @@ class AiTranslatorActivity : AppCompatActivity() {
      */
     private inner class SkeletonOverlayView(context: Context) : View(context) {
 
-        private var poseLandmarksList: List<List<NormalizedLandmark>>? = null
-        private var handLandmarksList: List<List<NormalizedLandmark>>? = null
+        @Volatile private var pose: List<NormalizedLandmark> = emptyList()
+        @Volatile private var face: List<NormalizedLandmark> = emptyList()
+        @Volatile private var hands: List<List<NormalizedLandmark>> = emptyList()
+
+        @Volatile private var imageWidth = 0
+        @Volatile private var imageHeight = 0
+        @Volatile private var mirror = false
+
+        private var scale = 1f
+        private var offsetX = 0f
+        private var offsetY = 0f
 
         // Paint for Pose lines (Cyan `#00E5FF`)
         private val poseLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -793,15 +782,25 @@ class AiTranslatorActivity : AppCompatActivity() {
             strokeJoin = Paint.Join.ROUND
         }
 
-        fun setPoseLandmarks(landmarks: List<List<NormalizedLandmark>>) {
-            this.poseLandmarksList = landmarks
+        fun setImageInfo(width: Int, height: Int, mirror: Boolean) {
+            imageWidth = width
+            imageHeight = height
+            this.mirror = mirror
+        }
+
+        fun setSkeleton(skeleton: PjmSkeleton) {
+            pose = skeleton.pose
+            face = skeleton.face
+            hands = listOf(skeleton.leftHand, skeleton.rightHand).filter { it.isNotEmpty() }
             postInvalidate()
         }
 
-        fun setHandLandmarks(landmarks: List<List<NormalizedLandmark>>) {
-            this.handLandmarksList = landmarks
-            postInvalidate()
+        private fun px(lm: NormalizedLandmark): Float {
+            val x = if (mirror) 1f - lm.x() else lm.x()
+            return x * imageWidth * scale + offsetX
         }
+
+        private fun py(lm: NormalizedLandmark): Float = lm.y() * imageHeight * scale + offsetY
 
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
@@ -813,18 +812,19 @@ class AiTranslatorActivity : AppCompatActivity() {
             // 1. Always draw corner brackets framing
             drawCornerBrackets(canvas, w, h)
 
-            // 2. Draw Pose Skeleton if detected
-            poseLandmarksList?.forEach { pose ->
-                if (pose.size >= 33) {
-                    drawPoseSkeleton(canvas, pose, w, h)
-                }
-            }
+            if (imageWidth <= 0 || imageHeight <= 0) return
+            scale = maxOf(w / imageWidth, h / imageHeight)
+            offsetX = (w - imageWidth * scale) / 2f
+            offsetY = (h - imageHeight * scale) / 2f
 
-            // 3. Draw Hand Skeleton if detected
-            handLandmarksList?.forEach { hand ->
-                if (hand.size >= 21) {
-                    drawHandSkeleton(canvas, hand, w, h)
-                }
+            val pose = pose
+            if (pose.size >= PjmLandmarks.POSE_LEN) drawPoseSkeleton(canvas, pose)
+
+            val face = face
+            if (face.size >= PjmLandmarks.FACE_LEN) drawFacePoints(canvas, face)
+
+            hands.forEach { hand ->
+                if (hand.size >= PjmLandmarks.LH_LEN) drawHandSkeleton(canvas, hand)
             }
         }
 
@@ -871,46 +871,37 @@ class AiTranslatorActivity : AppCompatActivity() {
             canvas.drawPath(pathBR, bracketPaint)
         }
 
-        private fun drawPoseSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>, w: Float, h: Float) {
-            // Pose connections
+        private fun drawPoseSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>) {
             val poseConnections = listOf(
-                // Face / Head
-                Pair(0, 1), Pair(1, 2), Pair(2, 3), Pair(0, 4), Pair(4, 5), Pair(5, 6),
-                Pair(3, 7), Pair(6, 8), Pair(9, 10),
-                // Shoulders & Torso
                 Pair(11, 12), Pair(11, 23), Pair(12, 24), Pair(23, 24),
-                // Arms (Key for PJM sign language!)
-                Pair(11, 13), Pair(13, 15), Pair(15, 17), Pair(15, 19), Pair(15, 21),
-                Pair(12, 14), Pair(14, 16), Pair(16, 18), Pair(16, 20), Pair(16, 22),
-                // Legs
-                Pair(23, 25), Pair(25, 27), Pair(24, 26), Pair(26, 28)
+                Pair(11, 13), Pair(13, 15),
+                Pair(12, 14), Pair(14, 16),
             )
 
-            // Draw bone connections
             for ((startIdx, endIdx) in poseConnections) {
-                if (startIdx < landmarks.size && endIdx < landmarks.size) {
-                    val p1 = landmarks[startIdx]
-                    val p2 = landmarks[endIdx]
-
-                    val x1 = p1.x() * w
-                    val y1 = p1.y() * h
-                    val x2 = p2.x() * w
-                    val y2 = p2.y() * h
-
-                    canvas.drawLine(x1, y1, x2, y2, poseLinePaint)
-                }
+                val p1 = landmarks[startIdx]
+                val p2 = landmarks[endIdx]
+                canvas.drawLine(px(p1), py(p1), px(p2), py(p2), poseLinePaint)
             }
 
-            // Draw joint nodes
             val nodeRadius = dpToPx(context, 5).toFloat()
-            for (landmark in landmarks) {
-                val cx = landmark.x() * w
-                val cy = landmark.y() * h
-                canvas.drawCircle(cx, cy, nodeRadius, poseJointPaint)
+            for (idx in PjmLandmarks.BODY) {
+                val landmark = landmarks[idx]
+                canvas.drawCircle(px(landmark), py(landmark), nodeRadius, poseJointPaint)
             }
         }
 
-        private fun drawHandSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>, w: Float, h: Float) {
+        private fun drawFacePoints(canvas: Canvas, landmarks: List<NormalizedLandmark>) {
+            val nodeRadius = dpToPx(context, 2).toFloat()
+            for (idx in PjmLandmarks.FACE) {
+                canvas.drawCircle(px(landmarks[idx]), py(landmarks[idx]), nodeRadius, poseJointPaint)
+            }
+            for (idx in PjmLandmarks.MOUTH) {
+                canvas.drawCircle(px(landmarks[idx]), py(landmarks[idx]), nodeRadius, handJointPaint)
+            }
+        }
+
+        private fun drawHandSkeleton(canvas: Canvas, landmarks: List<NormalizedLandmark>) {
             val handConnections = listOf(
                 // Thumb
                 Pair(0, 1), Pair(1, 2), Pair(2, 3), Pair(3, 4),
@@ -928,25 +919,15 @@ class AiTranslatorActivity : AppCompatActivity() {
 
             // Draw finger bones
             for ((startIdx, endIdx) in handConnections) {
-                if (startIdx < landmarks.size && endIdx < landmarks.size) {
-                    val p1 = landmarks[startIdx]
-                    val p2 = landmarks[endIdx]
-
-                    val x1 = p1.x() * w
-                    val y1 = p1.y() * h
-                    val x2 = p2.x() * w
-                    val y2 = p2.y() * h
-
-                    canvas.drawLine(x1, y1, x2, y2, handLinePaint)
-                }
+                val p1 = landmarks[startIdx]
+                val p2 = landmarks[endIdx]
+                canvas.drawLine(px(p1), py(p1), px(p2), py(p2), handLinePaint)
             }
 
             // Draw finger joint nodes
             val nodeRadius = dpToPx(context, 4).toFloat()
-            for (landmark in landmarks) {
-                val cx = landmark.x() * w
-                val cy = landmark.y() * h
-                canvas.drawCircle(cx, cy, nodeRadius, handJointPaint)
+            for (idx in PjmLandmarks.HAND) {
+                canvas.drawCircle(px(landmarks[idx]), py(landmarks[idx]), nodeRadius, handJointPaint)
             }
         }
     }
