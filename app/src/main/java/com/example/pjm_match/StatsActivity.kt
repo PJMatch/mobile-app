@@ -1,6 +1,6 @@
 package com.example.pjm_match
 
-import android.app.Activity
+import androidx.appcompat.app.AppCompatActivity
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -12,11 +12,11 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 
-class StatsActivity : Activity() {
+class StatsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        actionBar?.hide()
+        supportActionBar?.hide()
 
         val mainContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -204,7 +204,7 @@ class StatsActivity : Activity() {
         }
 
         val chartSubtitle = TextView(this).apply {
-            text = "12–18 października"
+            text = "Dzisiaj (kliknij, by powiększyć)"
             textSize = 11f
             setTextColor(Color.parseColor("#7E7A93"))
             setPadding(0, 2, 0, 0)
@@ -287,6 +287,72 @@ class StatsActivity : Activity() {
 
         chartCard.addView(barGraphLayout)
         rootLayout.addView(chartCard)
+        
+        val openBarChartFullScreen = {
+            startActivity(Intent(this, BarChartFullScreenActivity::class.java))
+        }
+        
+        chartHeaderRow.setOnClickListener { openBarChartFullScreen() }
+        chartCard.setOnClickListener { openBarChartFullScreen() }
+
+        val radarHeaderLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, 16)
+        }
+
+        val radarTitleLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+
+        val radarTitle = TextView(this).apply {
+            text = "Analiza techniki"
+            textSize = 18f
+            setTextColor(Color.parseColor("#2B2D91"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+
+        val radarDateRange = TextView(this).apply {
+            text = "Dzisiaj (kliknij, by powiększyć)"
+            textSize = 13f
+            setTextColor(Color.parseColor("#F58220"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 4, 0, 0)
+        }
+
+        radarTitleLayout.addView(radarTitle)
+        radarTitleLayout.addView(radarDateRange)
+        
+        radarHeaderLayout.addView(radarTitleLayout)
+        rootLayout.addView(radarHeaderLayout)
+
+        val radarCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = whiteCardBg.constantState?.newDrawable() as GradientDrawable
+            setPadding(20, 40, 20, 40)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 32 }
+        }
+
+        val radarChartView = RadarChartView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (280 * resources.displayMetrics.density).toInt()
+            )
+        }
+
+        radarCard.addView(radarChartView)
+        rootLayout.addView(radarCard)
+
+        val openRadarFullScreen = {
+            startActivity(Intent(this, RadarChartFullScreenActivity::class.java))
+        }
+
+        radarHeaderLayout.setOnClickListener { openRadarFullScreen() }
+        radarCard.setOnClickListener { openRadarFullScreen() }
 
         val topicsHeaderLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -642,6 +708,7 @@ class StatsActivity : Activity() {
 
             val navAi = createNavItem("📷", "Tłumacz AI", false) {
                 startActivity(Intent(this@StatsActivity, AiTranslatorActivity::class.java))
+                                startActivity(Intent(this@StatsActivity, AiTranslatorActivity::class.java))
                 finish()
             }
 
@@ -657,5 +724,98 @@ class StatsActivity : Activity() {
             addView(navStats)
             addView(navProfile)
         }
+    }
+}
+
+class RadarChartView(context: android.content.Context) : android.view.View(context) {
+    var dataPoints: FloatArray = floatArrayOf(0.75f, 0.8f, 0.6f, 0.9f, 0.85f)
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    private val labels = arrayOf("Trajektoria\nruchu", "Płynność", "Prędkość", "Orientacja\ndłoni", "Ułożenie\npalców")
+
+    private val path = android.graphics.Path()
+    private val dataPath = android.graphics.Path()
+
+    private val density = context.resources.displayMetrics.density
+
+    private val gridPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#E6E8F5")
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 1f * density
+    }
+
+    private val dataPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#4D2B2D91")
+        style = android.graphics.Paint.Style.FILL
+    }
+
+    private val dataStrokePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#2B2D91")
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 2f * density
+    }
+
+    private val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#7E7A93")
+        textSize = 10f * density
+        textAlign = android.graphics.Paint.Align.CENTER
+    }
+
+    override fun onDraw(canvas: android.graphics.Canvas) {
+        super.onDraw(canvas)
+
+        val cx = width / 2f
+        val cy = height / 2f
+        val radius = (Math.min(width, height) / 2f) * 0.65f
+
+        val numPoints = 5
+        val angleStep = Math.PI * 2 / numPoints
+
+        for (step in 1..4) {
+            val r = radius * (step / 4f)
+            path.reset()
+            for (i in 0 until numPoints) {
+                val angle = i * angleStep - Math.PI / 2
+                val x = cx + Math.cos(angle).toFloat() * r
+                val y = cy + Math.sin(angle).toFloat() * r
+                if (i == 0) path.moveTo(x, y)
+                else path.lineTo(x, y)
+            }
+            path.close()
+            canvas.drawPath(path, gridPaint)
+        }
+
+        for (i in 0 until numPoints) {
+            val angle = i * angleStep - Math.PI / 2
+            val x = cx + Math.cos(angle).toFloat() * radius
+            val y = cy + Math.sin(angle).toFloat() * radius
+            canvas.drawLine(cx, cy, x, y, gridPaint)
+
+            val textR = radius * 1.35f
+            val tx = cx + Math.cos(angle).toFloat() * textR
+            val ty = cy + Math.sin(angle).toFloat() * textR
+            val lines = labels[i].split("\n")
+            var textY = ty - (lines.size - 1) * textPaint.textSize / 2
+            for (line in lines) {
+                canvas.drawText(line, tx, textY + textPaint.textSize / 3, textPaint)
+                textY += textPaint.textSize + 2f * density
+            }
+        }
+
+        dataPath.reset()
+        for (i in 0 until numPoints) {
+            val angle = i * angleStep - Math.PI / 2
+            val value = dataPoints.getOrElse(i) { 0f }.coerceIn(0f, 1f)
+            val x = cx + Math.cos(angle).toFloat() * radius * value
+            val y = cy + Math.sin(angle).toFloat() * radius * value
+            if (i == 0) dataPath.moveTo(x, y)
+            else dataPath.lineTo(x, y)
+        }
+        dataPath.close()
+        canvas.drawPath(dataPath, dataPaint)
+        canvas.drawPath(dataPath, dataStrokePaint)
     }
 }
