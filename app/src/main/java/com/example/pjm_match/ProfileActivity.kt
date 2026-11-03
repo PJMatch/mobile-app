@@ -76,7 +76,15 @@ class ProfileActivity : BaseActivity() {
     private fun learningCard(): LinearLayout = card(padding = 0) {
         place(profileOptionRow(Icons.profileTarget, "Cel dzienny", "50 XP dziennie"))
         place(divider())
-        place(profileOptionRow(Icons.profileTheme, "Tryb jasny/ciemny", "Jasny · Automatycznie"))
+        val mode = ThemeManager.getThemeMode(this@ProfileActivity)
+        val subtitle = when (mode) {
+            ThemeMode.LIGHT -> "Jasny"
+            ThemeMode.DARK -> "Ciemny"
+            ThemeMode.SYSTEM -> "Jasny · Automatycznie"
+        }
+        place(profileOptionRow(Icons.profileTheme, "Tryb jasny/ciemny", subtitle) {
+            startActivity(Intent(this@ProfileActivity, AppearanceActivity::class.java))
+        })
         place(divider())
         place(profileOptionRowWithSwitch(Icons.profileBell, "Przypomnienie o nauce", "Codziennie o 20:00", isChecked = true))
     }

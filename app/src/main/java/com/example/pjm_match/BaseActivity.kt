@@ -40,8 +40,11 @@ enum class Tab(val label: String, val icon: IconSpec, val activityClass: Class<o
 abstract class BaseActivity : AppCompatActivity() {
 
     protected open val tabRoot: Tab? = null
+    private var appliedThemeIsDark: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
+        appliedThemeIsDark = Palette.isDark
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         @Suppress("DEPRECATION")
@@ -49,10 +52,18 @@ abstract class BaseActivity : AppCompatActivity() {
         @Suppress("DEPRECATION")
         window.navigationBarColor = Color.TRANSPARENT
         WindowInsetsControllerCompat(window, window.decorView).apply {
-            isAppearanceLightStatusBars = true
-            isAppearanceLightNavigationBars = true
+            isAppearanceLightStatusBars = !appliedThemeIsDark
+            isAppearanceLightNavigationBars = !appliedThemeIsDark
         }
         window.decorView.setBackgroundColor(Palette.background)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        ThemeManager.applyTheme(this)
+        if (appliedThemeIsDark != Palette.isDark) {
+            recreate()
+        }
     }
 
     fun scaffold(
