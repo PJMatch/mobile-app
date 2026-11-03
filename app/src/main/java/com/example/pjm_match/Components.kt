@@ -139,4 +139,12 @@ object Icons {
     val trSwitchCamera = IconSpec(R.drawable.ic_switch_camera, 17.33f, 17.33f)
     val lessonPlaceholderHand = IconSpec(R.drawable.ic_hand, 56f, 54.2f)
     val permissionCamera = IconSpec(R.drawable.ic_camera, 40f, 33f)
+    val profileBook = IconSpec(R.drawable.ic_book, 14.17f, 12.75f)
+    val profileTarget = IconSpec(R.drawable.ic_target, 15.83f, 15.83f)
+    val profileTheme = IconSpec(R.drawable.ic_theme, 15.92f, 15.83f)
+    val profileBell = IconSpec(R.drawable.ic_bell, 14.25f, 15.83f)
+    val profileUser = IconSpec(R.drawable.ic_user, 12.67f, 14.25f)
+    val profileShield = IconSpec(R.drawable.ic_shield, 12.67f, 15.85f)
+    val profileLogout = IconSpec(R.drawable.ic_logout, 14.24f, 14.24f)
+    val profileChevronRight = IconSpec(R.drawable.ic_chevron_right, 4.25f, 8.5f)
 }

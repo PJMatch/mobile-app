@@ -34,7 +34,7 @@ enum class Tab(val label: String, val icon: IconSpec, val activityClass: Class<o
     LEARN("Nauka", Icons.navRoute, LearningPathActivity::class.java),
     TRANSLATOR("Tłumacz AI", Icons.navScan, AiTranslatorActivity::class.java),
     STATS("Statystyki", Icons.navChart, StatsActivity::class.java),
-    PROFILE("Profil", Icons.navUser, null),
+    PROFILE("Profil", Icons.navUser, ProfileActivity::class.java),
 }
 
 abstract class BaseActivity : AppCompatActivity() {
