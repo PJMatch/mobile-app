@@ -604,44 +604,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val asymmetryInfo = analyzeBimanualVelocityAsymmetry(activeSample, activeReference)
         val jerkSmoothnessInfo = analyzeMovementJerkSmoothness(activeSample)
 
-        val dialogMessage = StringBuilder().apply {
-            append("TWÓJ WYNIK: $scorePoints / 100 pkt\n")
-            append("Ocena: $stars\n")
-            append("(Uwzględniono 5% margines tolerancji)\n\n")
-
-            append("WSKAZÓWKI I OCENA GESTU:\n\n")
-
-            append("1. TEMPO I CZAS TRWANIA:\n")
-            append("${speedInfo.first}\n")
-            append("• ${speedInfo.second}\n\n")
-
-            append("2. PŁYNOŚĆ RUCHU:\n")
-            append("${smoothnessInfo.first}\n")
-            append("• ${smoothnessInfo.second}\n\n")
-
-            append("3. PRECYZJA UŁOŻENIA DŁONI:\n")
-            append("${trajectoryInfo.first}\n")
-            append("• ${trajectoryInfo.second}\n\n")
-
-            append("4. TRAJEKTORIA I PEŁNOŚĆ RUCHU (DTW / Fréchet):\n")
-            append("${frechetTrajectoryInfo.first}\n")
-            append("• ${frechetTrajectoryInfo.second}\n\n")
-
-            append("5. ORIENTACJA DŁONI (Kąt nachylenia):\n")
-            append("${orientationInfo.first}\n")
-            append("• ${orientationInfo.second}\n\n")
-
-            append("6. ASYMETRIA PRĘDKOŚCI (Znaki oburęczne):\n")
-            append("${asymmetryInfo.first}\n")
-            append("• ${asymmetryInfo.second}\n\n")
-
-            append("7. GŁADKOŚĆ RUCHU (Szarpnięcia / Pochodna przyspieszenia):\n")
-            append("${jerkSmoothnessInfo.first}\n")
-            append("• ${jerkSmoothnessInfo.second}\n\n")
-
-            append("Czy chcesz zapisać to nagranie jako nowy wzorzec gestu?")
-        }.toString()
-
         val resultsIntent = Intent(this, SignResultsActivity::class.java).apply {
             putExtra(SignResultsActivity.EXTRA_SIGN_NAME, activeSignName)
             putExtra(SignResultsActivity.EXTRA_SCORE, scorePoints)
