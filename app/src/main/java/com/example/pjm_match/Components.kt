@@ -147,4 +147,11 @@ object Icons {
     val profileShield = IconSpec(R.drawable.ic_shield, 12.67f, 15.85f)
     val profileLogout = IconSpec(R.drawable.ic_logout, 14.24f, 14.24f)
     val profileChevronRight = IconSpec(R.drawable.ic_chevron_right, 4.25f, 8.5f)
+    val profileChevronLeft = IconSpec(R.drawable.ic_chevron_left, 4.75f, 9.5f)
+    val profileLock = IconSpec(R.drawable.ic_lock, 17.25f, 19.0f)
+    val profileClock = IconSpec(R.drawable.ic_clock, 15.83f, 15.83f)
+    val profileSound = IconSpec(R.drawable.ic_sound, 15.84f, 12.67f)
+    val profileVibrate = IconSpec(R.drawable.ic_vibrate, 15.84f, 11.08f)
+    val profileMessages = IconSpec(R.drawable.ic_messages, 19.0f, 19.0f)
+    val profileInfo = IconSpec(R.drawable.ic_info, 15.67f, 15.67f)
 }

@@ -1,5 +1,6 @@
 package com.example.pjm_match
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -14,6 +15,7 @@ import com.example.pjm_match.ui.horizontal
 import com.example.pjm_match.ui.icon
 import com.example.pjm_match.ui.iconTile
 import com.example.pjm_match.ui.label
+import com.example.pjm_match.ui.onTap
 import com.example.pjm_match.ui.pad
 import com.example.pjm_match.ui.place
 import com.example.pjm_match.ui.roundedRect
@@ -80,12 +82,21 @@ class ProfileActivity : BaseActivity() {
     }
 
     private fun accountCard(): LinearLayout = card(padding = 0) {
-        place(profileOptionRow(Icons.profileUser, "Dane konta", "Adres e-mail i hasło"))
+        place(profileOptionRow(Icons.profileUser, "Dane konta", "Adres e-mail i hasło") {
+            startActivity(Intent(this@ProfileActivity, AccountDataActivity::class.java))
+        })
         place(divider())
-        place(profileOptionRow(Icons.profileShield, "Ustawienia powiadomień", "Dźwięki, wibracje i wiadomości"))
+        place(profileOptionRow(Icons.profileShield, "Ustawienia powiadomień", "Dźwięki, wibracje i wiadomości") {
+            startActivity(Intent(this@ProfileActivity, NotificationSettingsActivity::class.java))
+        })
     }
 
-    private fun profileOptionRow(iconSpec: IconSpec, title: String, subtitle: String): LinearLayout = horizontal {
+    private fun profileOptionRow(
+        iconSpec: IconSpec,
+        title: String,
+        subtitle: String,
+        onClick: (() -> Unit)? = null,
+    ): LinearLayout = horizontal {
         pad(16, 14)
         place(iconTile(iconSpec, Palette.primary, Palette.tint, sizeDp = 34, radiusDp = 12), 34, 34)
         place(vertical {
@@ -93,6 +104,9 @@ class ProfileActivity : BaseActivity() {
             place(label(subtitle, 14f, Palette.textSecondary, 500), top = 2)
         }, 0, WRAP, 1f, start = 14)
         place(icon(Icons.profileChevronRight, Palette.textMuted), WRAP, WRAP)
+        if (onClick != null) {
+            onTap(20, Palette.ripple, onClick)
+        }
     }
 
     private fun profileOptionRowWithSwitch(iconSpec: IconSpec, title: String, subtitle: String, isChecked: Boolean): LinearLayout = horizontal {
