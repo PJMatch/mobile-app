@@ -307,8 +307,10 @@ class BarChartFullScreenActivity : AppCompatActivity() {
                             .build()
                         datePicker.addOnPositiveButtonClickListener { selection ->
                             val sdf = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
-                            val startDate = java.util.Date(selection.first)
-                            val endDate = java.util.Date(selection.second)
+                            val startMs = selection.first ?: System.currentTimeMillis()
+                            val endMs = selection.second ?: System.currentTimeMillis()
+                            val startDate = java.util.Date(startMs)
+                            val endDate = java.util.Date(endMs)
                             val startStr = sdf.format(startDate)
                             val endStr = sdf.format(endDate)
                             chartTitle.text = "Twój okres"

@@ -154,8 +154,10 @@ class RadarChartFullScreenActivity : AppCompatActivity() {
                             .build()
                         datePicker.addOnPositiveButtonClickListener { selection ->
                             val sdf = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
-                            val startStr = sdf.format(java.util.Date(selection.first))
-                            val endStr = sdf.format(java.util.Date(selection.second))
+                            val startMs = selection.first ?: System.currentTimeMillis()
+                            val endMs = selection.second ?: System.currentTimeMillis()
+                            val startStr = sdf.format(java.util.Date(startMs))
+                            val endStr = sdf.format(java.util.Date(endMs))
                             updateRadarChartTextAndData("$startStr - $endStr")
                             updateActiveFilter(index)
                         }

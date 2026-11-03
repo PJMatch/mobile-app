@@ -5,8 +5,7 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
-        android:label="PJM-Match"
-        android:extractNativeLibs="true">
+        android:label="PJM-Match">
         <activity
             android:name=".LoginActivity"
             android:exported="true">
@@ -31,7 +30,6 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity android:name=".SignListActivity" />
         <activity android:name=".SignActivity" />
-        <activity android:name=".StatsActivity" />
         <activity
             android:name=".StatsActivity"
             android:theme="@style/Theme.MaterialComponents.Light.NoActionBar" />
