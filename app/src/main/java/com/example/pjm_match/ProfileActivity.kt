@@ -146,6 +146,13 @@ class ProfileActivity : BaseActivity() {
         pad(16, 12)
         place(icon(Icons.profileLogout, Palette.primary), WRAP, WRAP)
         place(label("Wyloguj się", 16f, Palette.primary, 700), WRAP, WRAP, start = 10)
+        onTap(18, Palette.ripple) {
+            val intent = Intent(this@ProfileActivity, LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            startActivity(intent)
+            finish()
+        }
     }
 
     private fun divider(): View = View(this).apply {
