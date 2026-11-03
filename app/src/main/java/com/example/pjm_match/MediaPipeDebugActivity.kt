@@ -619,19 +619,16 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
         AlertDialog.Builder(this)
             .setTitle("✨ Wyniki Nagrania: $scorePoints / 100 pkt")
-            .setMessage("Nagranie zakończone. Ocena: $stars\n\nPrzejdź do ekranu pełnych wyników, aby przejrzeć szczegóły lub ponowić próbę.")
+            .setMessage("Nagranie zakończone. Ocena: $stars\n\nMożesz ustawić to nagranie jako nowy wzorzec gestu lub przejść do ekranu pełnych wyników.")
             .setPositiveButton("Zobacz Pełne Wyniki") { _, _ ->
                 startActivity(resultsIntent)
-                finish()
             }
             .setNeutralButton("Ustaw jako nowy wzorzec") { _, _ ->
                 referenceSequence = sample.toList()
-                Toast.makeText(this, "Zaktualizowano wzorzec gestu!", Toast.LENGTH_SHORT).show()
-                recordingStatsTextView.text = "Wzorzec zaktualizowany (${sample.size} klatek)"
-                startActivity(resultsIntent)
-                finish()
+                recordingStatsTextView.text = "Nowy wzorzec gestu zapisany! (${sample.size} klatek)"
+                Toast.makeText(this, "Zapisano to nagranie jako nowy wzorzec do porównań!", Toast.LENGTH_LONG).show()
             }
-            .setNegativeButton("Anuluj", null)
+            .setNegativeButton("Zamknij", null)
             .show()
     }
 
