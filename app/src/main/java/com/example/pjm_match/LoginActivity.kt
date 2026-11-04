@@ -58,35 +58,16 @@ class LoginActivity : Activity() {
             cornerRadius = 32f
         }
 
-        val emailContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = inputDrawable
-            setPadding(32, 16, 32, 16)
-        }
-
-        val emailIcon = TextView(this).apply {
-            text = "✉️"
-            textSize = 18f
-            setPadding(0, 0, 16, 0)
-        }
-
-        val standardTypeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
-
         val emailEditText = EditText(this).apply {
             hint = "Wpisz swój adres e-mail"
             setHintTextColor(Color.parseColor("#A8A5BE"))
             setTextColor(Color.parseColor("#1C1635"))
             textSize = 15f
-            typeface = standardTypeface
-            background = null
+            setPadding(36, 32, 36, 32)
             setSingleLine(true)
+            background = inputDrawable
             inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-
-        emailContainer.addView(emailIcon)
-        emailContainer.addView(emailEditText)
 
         val passwordLabelTextView = TextView(this).apply {
             text = "Hasło"
@@ -95,52 +76,16 @@ class LoginActivity : Activity() {
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
-        val passwordContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = inputDrawable.constantState?.newDrawable() as GradientDrawable
-            setPadding(32, 16, 32, 16)
-        }
-
-        val passwordIcon = TextView(this).apply {
-            text = "🔒"
-            textSize = 18f
-            setPadding(0, 0, 16, 0)
-        }
-
         val passwordEditText = EditText(this).apply {
             hint = "Wpisz hasło"
             setHintTextColor(Color.parseColor("#A8A5BE"))
             setTextColor(Color.parseColor("#1C1635"))
             textSize = 15f
-            background = null
-            setSingleLine(true)
+            setPadding(36, 32, 36, 32)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-            typeface = standardTypeface
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setSingleLine(true)
+            background = inputDrawable
         }
-
-        val eyeToggle = TextView(this).apply {
-            text = "👁"
-            textSize = 18f
-            setPadding(16, 0, 0, 0)
-            setOnClickListener {
-                val currentSelection = passwordEditText.selectionEnd
-                if ((passwordEditText.inputType and android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) {
-                    passwordEditText.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-                    text = "👁"
-                } else {
-                    passwordEditText.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                    text = "👁‍🗨"
-                }
-                passwordEditText.typeface = standardTypeface
-                passwordEditText.setSelection(currentSelection)
-            }
-        }
-
-        passwordContainer.addView(passwordIcon)
-        passwordContainer.addView(passwordEditText)
-        passwordContainer.addView(eyeToggle)
 
         val forgotPasswordTextView = TextView(this).apply {
             text = "Nie pamiętasz hasła?"
@@ -214,7 +159,7 @@ class LoginActivity : Activity() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 8 })
 
-        rootLayout.addView(emailContainer, LinearLayout.LayoutParams(
+        rootLayout.addView(emailEditText, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 24 })
@@ -224,7 +169,7 @@ class LoginActivity : Activity() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 8 })
 
-        rootLayout.addView(passwordContainer, LinearLayout.LayoutParams(
+        rootLayout.addView(passwordEditText, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 12 })
