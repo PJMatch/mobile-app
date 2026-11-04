@@ -80,7 +80,7 @@ class ProfileActivity : BaseActivity() {
         val subtitle = when (mode) {
             ThemeMode.LIGHT -> "Jasny"
             ThemeMode.DARK -> "Ciemny"
-            ThemeMode.SYSTEM -> "Jasny · Automatycznie"
+            ThemeMode.SYSTEM -> "Systemowy"
         }
         place(profileOptionRow(Icons.profileTheme, "Tryb jasny/ciemny", subtitle) {
             startActivity(Intent(this@ProfileActivity, AppearanceActivity::class.java))
