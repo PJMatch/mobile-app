@@ -128,7 +128,12 @@ class LearningPathActivity : BaseActivity() {
         }
     }
 
-    private fun openLesson() = startActivity(Intent(this, LessonActivity::class.java))
+    private fun openLesson() {
+        val intent = Intent(this, SignActivity::class.java).apply {
+            putExtra(SignActivity.EXTRA_SIGN, "Dzień dobry")
+        }
+        startActivity(intent)
+    }
 
     private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
 }
