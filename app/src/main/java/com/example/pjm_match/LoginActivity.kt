@@ -196,7 +196,7 @@ class LoginActivity : BaseActivity() {
             background = secondaryButtonDrawable
             setPadding(32, 36, 32, 36)
             setOnClickListener {
-                Toast.makeText(this@LoginActivity, "Rejestracja w przygotowaniu", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this@LoginActivity, RegisterActivity::class.java))
             }
         }
 
