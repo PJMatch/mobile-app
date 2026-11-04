@@ -2,7 +2,6 @@ package com.example.pjm_match
 
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -58,7 +57,6 @@ data class FrameSkeleton(
 
 class MediaPipeDebugActivity : AppCompatActivity() {
 
-    private var activeSignName: String = "Dzień dobry"
     private lateinit var previewView: PreviewView
     private lateinit var skeletonOverlayView: SkeletonOverlayView
     private lateinit var fpsTextView: TextView
@@ -101,8 +99,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
-
-        activeSignName = intent.getStringExtra(SignActivity.EXTRA_SIGN) ?: "Dzień dobry"
 
         val mainLayout = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
@@ -604,29 +600,51 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         val asymmetryInfo = analyzeBimanualVelocityAsymmetry(activeSample, activeReference)
         val jerkSmoothnessInfo = analyzeMovementJerkSmoothness(activeSample)
 
-        val resultsIntent = Intent(this, SignResultsActivity::class.java).apply {
-            putExtra(SignResultsActivity.EXTRA_SIGN_NAME, activeSignName)
-            putExtra(SignResultsActivity.EXTRA_SCORE, scorePoints)
-            putExtra(SignResultsActivity.EXTRA_STARS, stars)
-            putExtra(SignResultsActivity.EXTRA_TEMPO, "${speedInfo.first} (${speedInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_FLUENCY, "${smoothnessInfo.first} (${smoothnessInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_PRECISION, "${trajectoryInfo.first} (${trajectoryInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_TRAJECTORY, "${frechetTrajectoryInfo.first} (${frechetTrajectoryInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_ORIENTATION, "${orientationInfo.first} (${orientationInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_ASYMMETRY, "${asymmetryInfo.first} (${asymmetryInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_JERK, "${jerkSmoothnessInfo.first} (${jerkSmoothnessInfo.second})")
-        }
+        val dialogMessage = StringBuilder().apply {
+            append("TWÓJ WYNIK: $scorePoints / 100 pkt\n")
+            append("Ocena: $stars\n")
+            append("(Uwzględniono 5% margines tolerancji)\n\n")
+
+            append("WSKAZÓWKI I OCENA GESTU:\n\n")
+
+            append("1. TEMPO I CZAS TRWANIA:\n")
+            append("${speedInfo.first}\n")
+            append("• ${speedInfo.second}\n\n")
+
+            append("2. PŁYNOŚĆ RUCHU:\n")
+            append("${smoothnessInfo.first}\n")
+            append("• ${smoothnessInfo.second}\n\n")
+
+            append("3. PRECYZJA UŁOŻENIA DŁONI:\n")
+            append("${trajectoryInfo.first}\n")
+            append("• ${trajectoryInfo.second}\n\n")
+
+            append("4. TRAJEKTORIA I PEŁNOŚĆ RUCHU (DTW / Fréchet):\n")
+            append("${frechetTrajectoryInfo.first}\n")
+            append("• ${frechetTrajectoryInfo.second}\n\n")
+
+            append("5. ORIENTACJA DŁONI (Kąt nachylenia):\n")
+            append("${orientationInfo.first}\n")
+            append("• ${orientationInfo.second}\n\n")
+
+            append("6. ASYMETRIA PRĘDKOŚCI (Znaki oburęczne):\n")
+            append("${asymmetryInfo.first}\n")
+            append("• ${asymmetryInfo.second}\n\n")
+
+            append("7. GŁADKOŚĆ RUCHU (Szarpnięcia / Pochodna przyspieszenia):\n")
+            append("${jerkSmoothnessInfo.first}\n")
+            append("• ${jerkSmoothnessInfo.second}\n\n")
+
+            append("Czy chcesz zapisać to nagranie jako nowy wzorzec gestu?")
+        }.toString()
 
         AlertDialog.Builder(this)
-            .setTitle("✨ Wyniki Nagrania: $scorePoints / 100 pkt")
-            .setMessage("Nagranie zakończone. Ocena: $stars\n\nMożesz ustawić to nagranie jako nowy wzorzec gestu lub przejść do ekranu pełnych wyników.")
-            .setPositiveButton("Zobacz Pełne Wyniki") { _, _ ->
-                startActivity(resultsIntent)
-            }
-            .setNeutralButton("Ustaw jako nowy wzorzec") { _, _ ->
+            .setTitle("Podsumowanie Twojego Gestu")
+            .setMessage(dialogMessage)
+            .setPositiveButton("Ustaw jako nowy wzorzec") { _, _ ->
                 referenceSequence = sample.toList()
-                recordingStatsTextView.text = "Nowy wzorzec gestu zapisany! (${sample.size} klatek)"
-                Toast.makeText(this, "Zapisano to nagranie jako nowy wzorzec do porównań!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Zaktualizowano wzorzec gestu!", Toast.LENGTH_SHORT).show()
+                recordingStatsTextView.text = "Wzorzec zaktualizowany (${sample.size} klatek)"
             }
             .setNegativeButton("Zamknij", null)
             .show()
