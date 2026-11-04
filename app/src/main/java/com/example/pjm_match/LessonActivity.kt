@@ -164,7 +164,7 @@ class LessonActivity : BaseActivity() {
 
         showFeedback(question, correct)
         nextButton.isEnabled = true
-        val goal = LearnerStats.dailyGoalXp
+        val goal = DailyGoalSettings.get(this)
         footerNote.text = if (correct) {
             "XP dodane! Twój dzienny cel: ${minOf(LearnerStats.todayXp + earnedXp, goal)} / $goal XP"
         } else {

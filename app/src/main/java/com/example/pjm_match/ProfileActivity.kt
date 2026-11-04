@@ -26,15 +26,21 @@ class ProfileActivity : BaseActivity() {
     override val tabRoot = Tab.PROFILE
     private lateinit var profileName: android.widget.TextView
     private lateinit var profileInitial: android.widget.TextView
+    private lateinit var goalSummary: android.widget.TextView
 
     override fun onResume() {
         super.onResume()
         profileName.text = AccountProfile.name(this)
         profileInitial.text = AccountProfile.initial(this)
+        goalSummary.text = "${DailyGoalSettings.get(this)} XP dziennie"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        render()
+    }
+
+    private fun render() {
         scaffold(Tab.PROFILE) {
             place(header())
             place(userProfileCard(), top = 24)
@@ -92,7 +98,10 @@ class ProfileActivity : BaseActivity() {
     }
 
     private fun learningCard(): LinearLayout = card(padding = 0) {
-        place(profileOptionRow(Icons.profileTarget, "Cel dzienny", "50 XP dziennie"))
+        goalSummary = label("${DailyGoalSettings.get(this@ProfileActivity)} XP dziennie", 14f, Palette.textSecondary, 500)
+        place(profileOptionRow(Icons.profileTarget, "Cel dzienny", "", subtitleView = goalSummary) {
+            startActivity(Intent(this@ProfileActivity, DailyGoalActivity::class.java))
+        })
         place(divider())
         val mode = ThemeManager.getThemeMode(this@ProfileActivity)
         val subtitle = when (mode) {
@@ -121,13 +130,14 @@ class ProfileActivity : BaseActivity() {
         iconSpec: IconSpec,
         title: String,
         subtitle: String,
+        subtitleView: android.widget.TextView? = null,
         onClick: (() -> Unit)? = null,
     ): LinearLayout = horizontal {
         pad(16, 14)
         place(iconTile(iconSpec, Palette.primary, Palette.tint, sizeDp = 34, radiusDp = 12), 34, 34)
         place(vertical {
             place(label(title, 17f, Palette.text, 700))
-            place(label(subtitle, 14f, Palette.textSecondary, 500), top = 2)
+            place(subtitleView ?: label(subtitle, 14f, Palette.textSecondary, 500), top = 2)
         }, 0, WRAP, 1f, start = 14)
         place(icon(Icons.profileChevronRight, Palette.textMuted), WRAP, WRAP)
         if (onClick != null) {

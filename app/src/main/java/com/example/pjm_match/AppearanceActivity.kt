@@ -119,7 +119,7 @@ class AppearanceActivity : BaseActivity() {
             place(iconTile(Icons.profileBook, Palette.primary, Palette.tint, sizeDp = 42, radiusDp = 14), 42, 42)
             place(vertical {
                 place(label("Twoja nauka", 18f, Palette.text, 700))
-                place(label("50 XP dziennie", 14f, Palette.textSecondary, 500), top = 2)
+                place(label("${DailyGoalSettings.get(this@AppearanceActivity)} XP dziennie", 14f, Palette.textSecondary, 500), top = 2)
             }, 0, WRAP, 1f, start = 14)
             place(icon(Icons.pathFlame, Palette.accent), WRAP, WRAP)
         })
