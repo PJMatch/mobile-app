@@ -24,6 +24,14 @@ import com.example.pjm_match.ui.vertical
 class ProfileActivity : BaseActivity() {
 
     override val tabRoot = Tab.PROFILE
+    private lateinit var profileName: android.widget.TextView
+    private lateinit var profileInitial: android.widget.TextView
+
+    override fun onResume() {
+        super.onResume()
+        profileName.text = AccountProfile.name(this)
+        profileInitial.text = AccountProfile.initial(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,12 +53,22 @@ class ProfileActivity : BaseActivity() {
 
     private fun userProfileCard(): LinearLayout = card(padding = 20) {
         place(horizontal {
-            place(avatar(LearnerStats.initial, 24f), 60, 60)
+            val avatarView = avatar(AccountProfile.initial(this@ProfileActivity), 24f)
+            profileInitial = avatarView.getChildAt(0) as android.widget.TextView
+            place(avatarView, 60, 60)
             place(vertical {
-                place(label("Ania", 22f, Palette.text, 700))
+                profileName = label(AccountProfile.name(this@ProfileActivity), 22f, Palette.text, 700)
+                place(profileName)
                 place(label("Początkująca · PJM", 14.5f, Palette.textSecondary, 500), top = 2)
             }, 0, WRAP, 1f, start = 16)
-            place(label("Edytuj", 15f, Palette.primary, 700), WRAP, WRAP)
+            place(label("Edytuj", 15f, Palette.primary, 700).apply {
+                gravity = Gravity.CENTER
+                minimumHeight = dp(48)
+                pad(8, 0)
+                onTap(12, Palette.ripple) {
+                    startActivity(Intent(this@ProfileActivity, AccountDataActivity::class.java))
+                }
+            }, WRAP, WRAP)
         })
 
         place(View(this@ProfileActivity).apply {
@@ -80,7 +98,7 @@ class ProfileActivity : BaseActivity() {
         val subtitle = when (mode) {
             ThemeMode.LIGHT -> "Jasny"
             ThemeMode.DARK -> "Ciemny"
-            ThemeMode.SYSTEM -> "Jasny · Automatycznie"
+            ThemeMode.SYSTEM -> "Systemowy"
         }
         place(profileOptionRow(Icons.profileTheme, "Tryb jasny/ciemny", subtitle) {
             startActivity(Intent(this@ProfileActivity, AppearanceActivity::class.java))
