@@ -25,15 +25,20 @@ class NotificationSettingsActivity : BaseActivity() {
 
     override val tabRoot = Tab.PROFILE
 
+    private var remindersContainer: LinearLayout? = null
+    private var soundsContainer: LinearLayout? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         scaffold(Tab.PROFILE) {
             place(backNav())
             place(header(), top = 12)
             place(sectionTitle("Przypomnienia o nauce"), top = 28, bottom = 14)
-            place(remindersCard())
+            remindersContainer = place(vertical())
+            renderReminders()
             place(sectionTitle("Dźwięki i wiadomości"), top = 28, bottom = 14)
-            place(soundsCard())
+            soundsContainer = place(vertical())
+            renderSounds()
             place(infoNoteRow(), top = 18, bottom = 20)
             place(saveButton(), top = 8, bottom = 24)
         }
@@ -51,21 +56,61 @@ class NotificationSettingsActivity : BaseActivity() {
         place(bodyText("Ucz się we własnym rytmie. Wybierz, jak mamy Ci przypominać o nauce."), top = 8)
     }
 
-    private fun remindersCard(): LinearLayout = card(padding = 0) {
-        place(profileOptionRowWithSwitch(Icons.profileBell, "Przypomnienie o nauce", "Pomaga utrzymać codzienną serię", isChecked = true))
-        place(divider())
-        place(profileOptionRowWithValue(Icons.profileClock, "Godzina przypomnienia", "Codziennie o 20:00", value = "20:00"))
+    private fun renderReminders() {
+        val container = remindersContainer ?: return
+        container.removeAllViews()
+        container.place(card(padding = 0) {
+            val reminderEnabled = SettingsManager.isReminderEnabled(this@NotificationSettingsActivity)
+            place(profileOptionRowWithSwitch(Icons.profileBell, "Przypomnienie o nauce", "Pomaga utrzymać codzienną serię", reminderEnabled) {
+                val newState = !SettingsManager.isReminderEnabled(this@NotificationSettingsActivity)
+                SettingsManager.setReminderEnabled(this@NotificationSettingsActivity, newState)
+                SettingsManager.scheduleDailyReminder(this@NotificationSettingsActivity)
+                renderReminders()
+            })
+            place(divider())
+            val h = SettingsManager.getReminderHour(this@NotificationSettingsActivity)
+            val m = SettingsManager.getReminderMinute(this@NotificationSettingsActivity)
+            val timeString = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m)
+            place(profileOptionRowWithValue(Icons.profileClock, "Godzina przypomnienia", "Codziennie o $timeString", value = timeString) {
+                val picker = android.app.TimePickerDialog(
+                    this@NotificationSettingsActivity,
+                    { _, hourOfDay, minute ->
+                        SettingsManager.setReminderTime(this@NotificationSettingsActivity, hourOfDay, minute)
+                        SettingsManager.scheduleDailyReminder(this@NotificationSettingsActivity)
+                        renderReminders()
+                    },
+                    h, m, true
+                )
+                picker.show()
+            })
+        })
     }
 
-    private fun soundsCard(): LinearLayout = card(padding = 0) {
-        place(profileOptionRowWithSwitch(Icons.profileSound, "Dźwięki", "Sygnały powiadomień", isChecked = false))
-        place(divider())
-        place(profileOptionRowWithSwitch(Icons.profileVibrate, "Wibracje", "Delikatne sygnały dotykowe", isChecked = true))
-        place(divider())
-        place(profileOptionRowWithSwitch(Icons.profileMessages, "Wiadomości", "Nowości i wskazówki dotyczące nauki", isChecked = true))
+    private fun renderSounds() {
+        val container = soundsContainer ?: return
+        container.removeAllViews()
+        container.place(card(padding = 0) {
+            place(profileOptionRowWithSwitch(Icons.profileSound, "Dźwięki", "Sygnały powiadomień", SettingsManager.isSoundEnabled(this@NotificationSettingsActivity)) {
+                val newState = !SettingsManager.isSoundEnabled(this@NotificationSettingsActivity)
+                SettingsManager.setSoundEnabled(this@NotificationSettingsActivity, newState)
+                renderSounds()
+            })
+            place(divider())
+            place(profileOptionRowWithSwitch(Icons.profileVibrate, "Wibracje", "Delikatne sygnały dotykowe", SettingsManager.isVibrationEnabled(this@NotificationSettingsActivity)) {
+                val newState = !SettingsManager.isVibrationEnabled(this@NotificationSettingsActivity)
+                SettingsManager.setVibrationEnabled(this@NotificationSettingsActivity, newState)
+                renderSounds()
+            })
+            place(divider())
+            place(profileOptionRowWithSwitch(Icons.profileMessages, "Wiadomości", "Nowości i wskazówki dotyczące nauki", SettingsManager.isMessagesEnabled(this@NotificationSettingsActivity)) {
+                val newState = !SettingsManager.isMessagesEnabled(this@NotificationSettingsActivity)
+                SettingsManager.setMessagesEnabled(this@NotificationSettingsActivity, newState)
+                renderSounds()
+            })
+        })
     }
 
-    private fun profileOptionRowWithSwitch(iconSpec: IconSpec, title: String, subtitle: String, isChecked: Boolean): LinearLayout = horizontal {
+    private fun profileOptionRowWithSwitch(iconSpec: IconSpec, title: String, subtitle: String, isChecked: Boolean, onClick: (() -> Unit)? = null): LinearLayout = horizontal {
         pad(16, 14)
         place(iconTile(iconSpec, Palette.primary, Palette.tint, sizeDp = 34, radiusDp = 12), 34, 34)
         place(vertical {
@@ -73,9 +118,12 @@ class NotificationSettingsActivity : BaseActivity() {
             place(label(subtitle, 14f, Palette.textSecondary, 500), top = 2)
         }, 0, WRAP, 1f, start = 14)
         place(switchControl(isChecked), 40, 24)
+        if (onClick != null) {
+            onTap(20, Palette.ripple, onClick)
+        }
     }
 
-    private fun profileOptionRowWithValue(iconSpec: IconSpec, title: String, subtitle: String, value: String): LinearLayout = horizontal {
+    private fun profileOptionRowWithValue(iconSpec: IconSpec, title: String, subtitle: String, value: String, onClick: (() -> Unit)? = null): LinearLayout = horizontal {
         pad(16, 14)
         place(iconTile(iconSpec, Palette.primary, Palette.tint, sizeDp = 34, radiusDp = 12), 34, 34)
         place(vertical {
@@ -86,8 +134,8 @@ class NotificationSettingsActivity : BaseActivity() {
             place(label(value, 16f, Palette.primary, 700), WRAP, WRAP, end = 6)
             place(icon(Icons.profileChevronRight, Palette.textMuted), WRAP, WRAP)
         }, WRAP, WRAP)
-        onTap(20, Palette.ripple) {
-            Toast.makeText(this@NotificationSettingsActivity, "Wybór godziny w przygotowaniu", Toast.LENGTH_SHORT).show()
+        if (onClick != null) {
+            onTap(20, Palette.ripple, onClick)
         }
     }
 

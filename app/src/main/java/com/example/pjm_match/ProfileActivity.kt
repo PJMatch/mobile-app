@@ -28,11 +28,14 @@ class ProfileActivity : BaseActivity() {
     private lateinit var profileInitial: android.widget.TextView
     private lateinit var goalSummary: android.widget.TextView
 
+    private var learningContainer: LinearLayout? = null
+    
     override fun onResume() {
         super.onResume()
         profileName.text = AccountProfile.name(this)
         profileInitial.text = AccountProfile.initial(this)
         goalSummary.text = "${DailyGoalSettings.get(this)} XP dziennie"
+        renderLearning()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +48,8 @@ class ProfileActivity : BaseActivity() {
             place(header())
             place(userProfileCard(), top = 24)
             place(sectionTitle("Twoja nauka"), top = 28, bottom = 14)
-            place(learningCard())
+            learningContainer = place(vertical())
+            renderLearning()
             place(sectionTitle("Konto"), top = 28, bottom = 14)
             place(accountCard())
             place(logoutButton(), top = 24, bottom = 16)
@@ -97,23 +101,39 @@ class ProfileActivity : BaseActivity() {
         place(label(caption, 13f, Palette.textSecondary, 500), top = 4)
     }
 
-    private fun learningCard(): LinearLayout = card(padding = 0) {
-        goalSummary = label("${DailyGoalSettings.get(this@ProfileActivity)} XP dziennie", 14f, Palette.textSecondary, 500)
-        place(profileOptionRow(Icons.profileTarget, "Cel dzienny", "", subtitleView = goalSummary) {
-            startActivity(Intent(this@ProfileActivity, DailyGoalActivity::class.java))
+    private fun renderLearning() {
+        val container = learningContainer ?: return
+        container.removeAllViews()
+        container.place(card(padding = 0) {
+            goalSummary = label("${DailyGoalSettings.get(this@ProfileActivity)} XP dziennie", 14f, Palette.textSecondary, 500)
+            place(profileOptionRow(Icons.profileTarget, "Cel dzienny", "", subtitleView = goalSummary) {
+                startActivity(Intent(this@ProfileActivity, DailyGoalActivity::class.java))
+            })
+            place(divider())
+            val mode = ThemeManager.getThemeMode(this@ProfileActivity)
+            val subtitle = when (mode) {
+                ThemeMode.LIGHT -> "Jasny"
+                ThemeMode.DARK -> "Ciemny"
+                ThemeMode.SYSTEM -> "Systemowy"
+            }
+            place(profileOptionRow(Icons.profileTheme, "Tryb jasny/ciemny", subtitle) {
+                startActivity(Intent(this@ProfileActivity, AppearanceActivity::class.java))
+            })
+            place(divider())
+            
+            val reminderEnabled = SettingsManager.isReminderEnabled(this@ProfileActivity)
+            val h = SettingsManager.getReminderHour(this@ProfileActivity)
+            val m = SettingsManager.getReminderMinute(this@ProfileActivity)
+            val timeString = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m)
+            val reminderSubtitle = if (reminderEnabled) "Codziennie o $timeString" else "Wyłączone"
+            
+            place(profileOptionRowWithSwitch(Icons.profileBell, "Przypomnienie o nauce", reminderSubtitle, reminderEnabled) {
+                val newState = !SettingsManager.isReminderEnabled(this@ProfileActivity)
+                SettingsManager.setReminderEnabled(this@ProfileActivity, newState)
+                SettingsManager.scheduleDailyReminder(this@ProfileActivity)
+                renderLearning()
+            })
         })
-        place(divider())
-        val mode = ThemeManager.getThemeMode(this@ProfileActivity)
-        val subtitle = when (mode) {
-            ThemeMode.LIGHT -> "Jasny"
-            ThemeMode.DARK -> "Ciemny"
-            ThemeMode.SYSTEM -> "Systemowy"
-        }
-        place(profileOptionRow(Icons.profileTheme, "Tryb jasny/ciemny", subtitle) {
-            startActivity(Intent(this@ProfileActivity, AppearanceActivity::class.java))
-        })
-        place(divider())
-        place(profileOptionRowWithSwitch(Icons.profileBell, "Przypomnienie o nauce", "Codziennie o 20:00", isChecked = true))
     }
 
     private fun accountCard(): LinearLayout = card(padding = 0) {
@@ -145,7 +165,7 @@ class ProfileActivity : BaseActivity() {
         }
     }
 
-    private fun profileOptionRowWithSwitch(iconSpec: IconSpec, title: String, subtitle: String, isChecked: Boolean): LinearLayout = horizontal {
+    private fun profileOptionRowWithSwitch(iconSpec: IconSpec, title: String, subtitle: String, isChecked: Boolean, onClick: (() -> Unit)? = null): LinearLayout = horizontal {
         pad(16, 14)
         place(iconTile(iconSpec, Palette.primary, Palette.tint, sizeDp = 34, radiusDp = 12), 34, 34)
         place(vertical {
@@ -153,6 +173,9 @@ class ProfileActivity : BaseActivity() {
             place(label(subtitle, 14f, Palette.textSecondary, 500), top = 2)
         }, 0, WRAP, 1f, start = 14)
         place(switchControl(isChecked), 40, 24)
+        if (onClick != null) {
+            onTap(20, Palette.ripple) { onClick() }
+        }
     }
 
     private fun switchControl(checked: Boolean): FrameLayout = FrameLayout(this).apply {
