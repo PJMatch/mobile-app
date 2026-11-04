@@ -67,7 +67,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     private lateinit var recordingStatsTextView: TextView
     private lateinit var statusTextView: TextView
     private lateinit var recordButton: Button
-    private lateinit var compareButton: Button
     private lateinit var permissionOverlayLayout: LinearLayout
 
     private var cameraProvider: ProcessCameraProvider? = null
@@ -159,7 +158,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         val headerTitle = TextView(this).apply {
-            text = "MediaPipe Debugger"
+            text = activeSignName
             textSize = 16f
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -202,43 +201,26 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
         recordButton = Button(this).apply {
             text = "Rozpocznij zbieranie punktów"
-            textSize = 13f
+            textSize = 14f
             setTextColor(Color.WHITE)
             updateRecordButtonBg(false, this)
-            setPadding(32, 20, 32, 20)
+            setPadding(32, 22, 32, 22)
             setTypeface(null, android.graphics.Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginEnd = 12
-            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
             setOnClickListener {
                 toggleRecording()
             }
         }
 
-        compareButton = Button(this).apply {
-            text = "Porównaj ze wzorcem"
-            textSize = 13f
-            setTextColor(Color.WHITE)
-            val btnBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#302B4D"))
-                setStroke(2, Color.parseColor("#B8ACFF"))
-                cornerRadius = 24f
-            }
-            background = btnBg
-            setPadding(32, 20, 32, 20)
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            setOnClickListener {
-                compareWithReference()
-            }
-        }
-
         controlsLayout.addView(recordButton)
-        controlsLayout.addView(compareButton)
         mainLayout.addView(controlsLayout)
 
         val hudLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
             setPadding(28, 20, 28, 20)
             val hudBg = GradientDrawable().apply {
                 setColor(Color.parseColor("#DD1A192B"))
@@ -1122,27 +1104,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             }
         }
         return if (count > 0) Point3D(sumX / count, sumY / count, sumZ / count) else Point3D(0f, 0.5f, 0f)
-    }
-
-    private fun compareWithReference() {
-        val ref = referenceSequence
-        if (ref == null) {
-            if (recordedFrames.isNotEmpty()) {
-                referenceSequence = recordedFrames.toList()
-                Toast.makeText(this, "Zapisano ostatnie nagranie (${recordedFrames.size} klatek) jako wzorzec!", Toast.LENGTH_LONG).show()
-                recordingStatsTextView.text = "Wzorzec zapisany (${recordedFrames.size} klatek)"
-            } else {
-                Toast.makeText(this, "Brak zapisanego wzorca! Najpierw nagraj punkty.", Toast.LENGTH_LONG).show()
-            }
-            return
-        }
-
-        if (currentLatestPose.isNotEmpty()) {
-            val liveFrame = FrameSkeleton(SystemClock.uptimeMillis(), currentLatestPose, currentLatestHands)
-            evaluateComparison(listOf(liveFrame), ref)
-        } else {
-            Toast.makeText(this, "Nie wykryto aktualnie szkieletu w kadrze", Toast.LENGTH_SHORT).show()
-        }
     }
 
     private fun calculateFrameDistance(f1: FrameSkeleton, f2: FrameSkeleton): Float {

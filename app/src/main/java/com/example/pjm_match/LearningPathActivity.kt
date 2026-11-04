@@ -49,7 +49,8 @@ class LearningPathActivity : BaseActivity() {
             })
             place(topicCard(), top = 24)
             place(path(), top = 24)
-            place(sectionTitle("Odkrywaj dalej"), top = 24, bottom = 14)
+            place(cameraTrainingCard(), top = 28)
+            place(sectionTitle("Odkrywaj dalej"), top = 28, bottom = 14)
             Curriculum.nextTopics.forEach { place(topicRow(it), bottom = 12) }
         }
     }
@@ -126,6 +127,25 @@ class LearningPathActivity : BaseActivity() {
         onTap(20, Palette.ripple) {
             toast(if (topic.unlocked) "Temat „${topic.title}” pojawi się wkrótce" else "Ten temat odblokujesz ${topic.availability}")
         }
+    }
+
+    private fun cameraTrainingCard(): LinearLayout = card(background = Palette.tint, border = Palette.primary) {
+        place(horizontal {
+            place(iconTile(Icons.trCamera, Palette.primary, Palette.surface, radiusDp = 16), 52, 52)
+            place(vertical {
+                place(eyebrow("TRENING Z KAMERĄ · MEDIAPIPE", Palette.primary))
+                place(label("Praktyczny Trening z Kamerą", 20f, Palette.text, 800), top = 2)
+                place(label("Przejdź do wyboru znaku i przećwicz gest z detekcją kamery w czasie rzeczywistym.", 13.5f, Palette.textSecondary, 500), top = 4)
+            }, 0, WRAP, 1f, start = 16)
+        })
+
+        place(ActionButton(this@LearningPathActivity, Palette.onPrimary).apply {
+            background = roundedRect(Palette.primary, 18)
+            setContent("Ćwicz znak z kamerą", Icons.pathPlay)
+            onTap(18, Palette.ripple) {
+                startActivity(Intent(this@LearningPathActivity, SignSelectionActivity::class.java))
+            }
+        }, MATCH, 52, top = 18)
     }
 
     private fun openLesson() = startActivity(Intent(this, LessonActivity::class.java))
