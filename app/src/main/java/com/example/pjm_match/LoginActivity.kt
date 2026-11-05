@@ -64,11 +64,6 @@ class LoginActivity : BaseActivity() {
             setPadding(32, 16, 32, 16)
         }
 
-        val emailIcon = TextView(this).apply {
-            text = "✉️"
-            textSize = 18f
-            setPadding(0, 0, 16, 0)
-        }
 
         val standardTypeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
 
@@ -84,7 +79,6 @@ class LoginActivity : BaseActivity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        emailContainer.addView(emailIcon)
         emailContainer.addView(emailEditText)
 
         val passwordLabelTextView = TextView(this).apply {
@@ -101,11 +95,6 @@ class LoginActivity : BaseActivity() {
             setPadding(32, 16, 32, 16)
         }
 
-        val passwordIcon = TextView(this).apply {
-            text = "🔒"
-            textSize = 18f
-            setPadding(0, 0, 16, 0)
-        }
 
         val passwordEditText = EditText(this).apply {
             hint = "Wpisz hasło"
@@ -137,7 +126,6 @@ class LoginActivity : BaseActivity() {
             }
         }
 
-        passwordContainer.addView(passwordIcon)
         passwordContainer.addView(passwordEditText)
         passwordContainer.addView(eyeToggle)
 

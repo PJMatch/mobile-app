@@ -116,10 +116,10 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 16 }
             }
 
-            val card1 = createMetricCard("240 XP", "⚡", "Łączne doświadczenie", Palette.accent)
+            val card1 = createMetricCard("240 XP", "", "Łączne doświadczenie", Palette.accent)
             card1.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 8 }
 
-            val card2 = createMetricCard("2", "📖", "Ukończone lekcje", Palette.primary)
+            val card2 = createMetricCard("2", "", "Ukończone lekcje", Palette.primary)
             card2.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 8 }
 
             statsRow1.addView(card1)
@@ -133,10 +133,10 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 28 }
             }
 
-            val card3 = createMetricCard("38 min", "⏱️", "Czas nauki łącznie", Palette.primary)
+            val card3 = createMetricCard("38 min", "", "Czas nauki łącznie", Palette.primary)
             card3.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 8 }
 
-            val card4 = createMetricCard("92%", "🎯", "Poprawne odpowiedzi", Palette.accent)
+            val card4 = createMetricCard("92%", "", "Poprawne odpowiedzi", Palette.accent)
             card4.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 8 }
 
             statsRow2.addView(card3)

@@ -600,7 +600,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("✨ Wyniki Nagrania: $scorePoints / 100 pkt")
+            .setTitle("Wyniki Nagrania: $scorePoints / 100 pkt")
             .setMessage("Nagranie zakończone. Ocena: $stars\n\nMożesz ustawić to nagranie jako nowy wzorzec gestu lub przejść do ekranu pełnych wyników.")
             .setPositiveButton("Zobacz Pełne Wyniki") { _, _ ->
                 startActivity(resultsIntent)
