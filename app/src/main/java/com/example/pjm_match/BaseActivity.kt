@@ -9,7 +9,6 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -132,7 +131,7 @@ abstract class BaseActivity : AppCompatActivity() {
         if (tab == tabRoot) return
         val target = tab.activityClass
         if (target == null) {
-            Toast.makeText(this, "${tab.label} w przygotowaniu", Toast.LENGTH_SHORT).show()
+            toast("${tab.label} w przygotowaniu")
             return
         }
         val home = Intent(this, MainActivity::class.java).addFlags(

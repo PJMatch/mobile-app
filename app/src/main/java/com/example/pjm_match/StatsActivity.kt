@@ -7,7 +7,9 @@ import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.example.pjm_match.ui.IconSpec
 import com.example.pjm_match.ui.Palette
+import com.example.pjm_match.ui.iconTile
 
 class StatsActivity : BaseActivity() {
 
@@ -90,16 +92,7 @@ class StatsActivity : BaseActivity() {
             bannerTextContainer.addView(bannerTitle)
             bannerTextContainer.addView(bannerSub2)
 
-            val flameCircleBg = GradientDrawable().apply {
-                setColor(Palette.heroIcon)
-                cornerRadius = 36f
-            }
-
-            val flameIconView = TextView(this@StatsActivity).apply {
-                text = "🔥"
-                textSize = 26f
-                gravity = Gravity.CENTER
-                background = flameCircleBg
+            val flameIconView = iconTile(Icons.startFlame, Palette.accentStrong, Palette.heroIcon).apply {
                 layoutParams = LinearLayout.LayoutParams(110, 110)
             }
 
@@ -487,13 +480,13 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 24 }
             }
 
-            val badge1 = createBadgeItem("🖐️", "Pierwszy gest", "Pierwsza lekcja", Palette.tint, Palette.text, true)
+            val badge1 = createBadgeItem(Icons.pathHand, Palette.primary, "Pierwszy gest", "Pierwsza lekcja", Palette.tint, Palette.text, true)
             badge1.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
-            val badge2 = createBadgeItem("🔥", "7 dni razem", "Tydzień nauki", Palette.accentTint, Palette.text, true)
+            val badge2 = createBadgeItem(Icons.startFlame, Palette.accent, "7 dni razem", "Tydzień nauki", Palette.accentTint, Palette.text, true)
             badge2.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
-            val badge3 = createBadgeItem("🔒", "Mistrz liczb", "Jeszcze przed Tobą", Palette.tint, Palette.textMuted, false)
+            val badge3 = createBadgeItem(Icons.pathLock, Palette.textMuted, "Mistrz liczb", "Jeszcze przed Tobą", Palette.tint, Palette.textMuted, false)
             badge3.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
             badgesRow.addView(badge1)
@@ -552,23 +545,18 @@ class StatsActivity : BaseActivity() {
         }
     }
 
-    private fun createBadgeItem(icon: String, title: String, subtitle: String, circleBgInt: Int, textColorInt: Int, isUnlocked: Boolean): LinearLayout {
+    private fun createBadgeItem(iconSpec: IconSpec, iconColorInt: Int, title: String, subtitle: String, circleBgInt: Int, textColorInt: Int, isUnlocked: Boolean): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(8, 8, 8, 8)
             if (!isUnlocked) alpha = 0.6f
 
-            val circleBg = GradientDrawable().apply {
-                setColor(circleBgInt)
-                cornerRadius = 44f
-            }
-
-            val iconView = TextView(this@StatsActivity).apply {
-                text = icon
-                textSize = 24f
-                gravity = Gravity.CENTER
-                background = circleBg
+            val iconView = iconTile(iconSpec, iconColorInt, circleBgInt).apply {
+                background = GradientDrawable().apply {
+                    setColor(circleBgInt)
+                    cornerRadius = 44f
+                }
                 layoutParams = LinearLayout.LayoutParams(110, 110)
             }
 
