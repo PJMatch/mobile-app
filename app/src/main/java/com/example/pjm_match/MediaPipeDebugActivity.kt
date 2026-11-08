@@ -19,7 +19,6 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -456,7 +455,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         countdownOverlayTextView.visibility = View.GONE
         updateRecordButtonBg(false)
         recordingStatsTextView.text = "Odliczanie anulowane"
-        Toast.makeText(this, "Anulowano odliczanie", Toast.LENGTH_SHORT).show()
+        toast("Anulowano odliczanie")
     }
 
     private fun startActualRecording() {
@@ -471,7 +470,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
             val autoStopSec = (autoStopMs / 1000f)
             recordingStatsTextView.text = "NAGRYWANIE... (Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s)"
-            Toast.makeText(this, "NAGRYWANIE! Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s", Toast.LENGTH_SHORT).show()
+            toast("NAGRYWANIE! Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s")
 
             autoStopTimer?.cancel()
             autoStopTimer = object : CountDownTimer(autoStopMs, 500) {
@@ -490,7 +489,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             }.start()
         } else {
             recordingStatsTextView.text = "ZBIERANIE PUNKTÓW... (0 klatek)"
-            Toast.makeText(this, "NAGRYWANIE ROZPOCZĘTE! Wykonaj gest.", Toast.LENGTH_SHORT).show()
+            toast("NAGRYWANIE ROZPOCZĘTE! Wykonaj gest.")
         }
     }
 
@@ -506,14 +505,14 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             if (referenceSequence == null) {
                 referenceSequence = trimmedFrames.toList()
                 recordingStatsTextView.text = "Zbieranie zakończone: Zapisano $frameCountRecorded klatek jako WZORZEC"
-                Toast.makeText(this, "Zapisano $frameCountRecorded klatek jako WZORZEC do porównań!", Toast.LENGTH_LONG).show()
+                toast("Zapisano $frameCountRecorded klatek jako WZORZEC do porównań!", long = true)
             } else {
                 recordingStatsTextView.text = "Zbieranie zakończone: Nagrano $frameCountRecorded klatek (obcięto końcówkę)"
                 evaluateComparison(trimmedFrames, referenceSequence!!)
             }
         } else {
             recordingStatsTextView.text = "Zbieranie anulowane: Brak zebranych punktów"
-            Toast.makeText(this, "Nie wykryto punktów podczas zbierania", Toast.LENGTH_SHORT).show()
+            toast("Nie wykryto punktów podczas zbierania")
         }
     }
 
@@ -608,7 +607,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             .setNeutralButton("Ustaw jako nowy wzorzec") { _, _ ->
                 referenceSequence = sample.toList()
                 recordingStatsTextView.text = "Nowy wzorzec gestu zapisany! (${sample.size} klatek)"
-                Toast.makeText(this, "Zapisano to nagranie jako nowy wzorzec do porównań!", Toast.LENGTH_LONG).show()
+                toast("Zapisano to nagranie jako nowy wzorzec do porównań!", long = true)
             }
             .setNegativeButton("Zamknij", null)
             .show()
@@ -1303,7 +1302,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         } catch (e: Throwable) {
             e.printStackTrace()
             statusTextView.text = "Błąd MediaPipe: ${e.localizedMessage}"
-            Toast.makeText(this, "Błąd ładownia MediaPipe JNI: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            toast("Błąd ładownia MediaPipe JNI: ${e.localizedMessage}", long = true)
         }
     }
 
@@ -1349,7 +1348,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
                 startCamera()
             } else {
                 permissionOverlayLayout.visibility = View.VISIBLE
-                Toast.makeText(this, "Kamera jest wymagana do debugera MediaPipe", Toast.LENGTH_LONG).show()
+                toast("Kamera jest wymagana do debugera MediaPipe", long = true)
             }
         }
     }

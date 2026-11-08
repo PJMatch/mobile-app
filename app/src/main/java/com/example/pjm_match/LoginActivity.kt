@@ -153,7 +153,7 @@ class LoginActivity : BaseActivity() {
                 val password = passwordEditText.text.toString().trim()
 
                 if (email.isEmpty() || password.isEmpty()) {
-                    Toast.makeText(this@LoginActivity, "Wpisz adres e-mail i hasło", Toast.LENGTH_SHORT).show()
+                    toast("Wpisz adres e-mail i hasło")
                 } else {
                     val intent = Intent(this@LoginActivity, MainActivity::class.java)
                     startActivity(intent)
@@ -182,7 +182,7 @@ class LoginActivity : BaseActivity() {
             background = secondaryButtonDrawable
             setPadding(32, 36, 32, 36)
             setOnClickListener {
-                Toast.makeText(this@LoginActivity, "Rejestracja w przygotowaniu", Toast.LENGTH_SHORT).show()
+                toast("Rejestracja w przygotowaniu")
             }
         }
 

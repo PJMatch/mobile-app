@@ -6,7 +6,6 @@ import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.Toast
 import com.example.pjm_match.ui.LearningPathLayout
 import com.example.pjm_match.ui.LearningPathLayout.Side
 import com.example.pjm_match.ui.LearningPathLayout.Slot
@@ -150,5 +149,4 @@ class LearningPathActivity : BaseActivity() {
 
     private fun openLesson() = startActivity(Intent(this, LessonActivity::class.java))
 
-    private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
 }

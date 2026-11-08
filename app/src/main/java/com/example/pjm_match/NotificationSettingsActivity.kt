@@ -5,7 +5,6 @@ import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.Toast
 import com.example.pjm_match.ui.IconSpec
 import com.example.pjm_match.ui.MATCH
 import com.example.pjm_match.ui.Palette
@@ -87,7 +86,7 @@ class NotificationSettingsActivity : BaseActivity() {
             place(icon(Icons.profileChevronRight, Palette.textMuted), WRAP, WRAP)
         }, WRAP, WRAP)
         onTap(20, Palette.ripple) {
-            Toast.makeText(this@NotificationSettingsActivity, "Wybór godziny w przygotowaniu", Toast.LENGTH_SHORT).show()
+            toast("Wybór godziny w przygotowaniu")
         }
     }
 
@@ -112,7 +111,7 @@ class NotificationSettingsActivity : BaseActivity() {
     }
 
     private fun saveButton(): ActionButton = primaryButton("Zapisz zmiany") {
-        Toast.makeText(this, "Zapisano ustawienia", Toast.LENGTH_SHORT).show()
+        toast("Zapisano ustawienia")
         finish()
     }
 
