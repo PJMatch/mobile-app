@@ -1,8 +1,6 @@
 package com.example.pjm_match
 
-import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
@@ -11,8 +9,9 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.example.pjm_match.ui.Palette
 
-class SignActivity : Activity() {
+class SignActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,7 +23,7 @@ class SignActivity : Activity() {
             val intent = Intent(this@SignActivity, SignResultsActivity::class.java).apply {
                 putExtra(SignResultsActivity.EXTRA_SIGN_NAME, sign)
                 putExtra(SignResultsActivity.EXTRA_SCORE, 88)
-                putExtra(SignResultsActivity.EXTRA_STARS, "⭐ Bardzo dobry gest!")
+                putExtra(SignResultsActivity.EXTRA_STARS, "Bardzo dobry gest!")
                 putExtra(SignResultsActivity.EXTRA_TEMPO, "W normie (1.2s · Tempo zbliżone do wzorca)")
                 putExtra(SignResultsActivity.EXTRA_FLUENCY, "Wysoka płynność (94% · Brak gwałtownych szarpnięć)")
                 putExtra(SignResultsActivity.EXTRA_PRECISION, "Precyzyjne ułożenie dłoni (90% zgodności pozycji)")
@@ -33,7 +32,7 @@ class SignActivity : Activity() {
         }
 
         val scrollView = ScrollView(this).apply {
-            setBackgroundColor(Color.parseColor("#F4F5FF"))
+            setBackgroundColor(Palette.background)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT
@@ -57,9 +56,9 @@ class SignActivity : Activity() {
         }
         
         val backBtn = TextView(this).apply {
-            text = "← Wróć"
+            text = "Wróć"
             textSize = 16f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.primary)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 0, 32, 0)
             setOnClickListener { finish() }
@@ -81,7 +80,7 @@ class SignActivity : Activity() {
         val stepTextView = TextView(this).apply {
             text = "Krok 1 / 2: Naucz się znaku"
             textSize = 12f
-            setTextColor(Color.parseColor("#F58220"))
+            setTextColor(Palette.accent)
             setTypeface(null, android.graphics.Typeface.BOLD)
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 6)
@@ -90,7 +89,7 @@ class SignActivity : Activity() {
         val signNameTextView = TextView(this).apply {
             text = sign
             textSize = 30f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
             gravity = Gravity.CENTER
         }
@@ -102,7 +101,8 @@ class SignActivity : Activity() {
         // 3. Video Instructions Card
         val videoContainer = FrameLayout(this).apply {
             val bgDrawable = GradientDrawable().apply {
-                setColor(Color.parseColor("#12121E"))
+                setColor(Palette.surface)
+                setStroke(2, Palette.border)
                 cornerRadius = 40f
             }
             background = bgDrawable
@@ -113,9 +113,9 @@ class SignActivity : Activity() {
         }
 
         val placeholderIcon = TextView(this).apply {
-            text = "▶ Odtwórz"
+            text = "Odtwórz"
             textSize = 20f
-            setTextColor(Color.WHITE)
+            setTextColor(Palette.primary)
             gravity = Gravity.CENTER
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -127,7 +127,7 @@ class SignActivity : Activity() {
         val placeholderText = TextView(this).apply {
             text = "Odtwarzacz instruktażu\n(Wideo z gestem PJM)"
             textSize = 14f
-            setTextColor(Color.parseColor("#7E7A93"))
+            setTextColor(Palette.textSecondary)
             gravity = Gravity.CENTER
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -144,7 +144,7 @@ class SignActivity : Activity() {
         val metricsHeader = TextView(this).apply {
             text = "Twój Ostatni Wynik i Jakość Gestu:"
             textSize = 18f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 0, 0, 16)
         }
@@ -159,10 +159,10 @@ class SignActivity : Activity() {
             ).apply { bottomMargin = 28 }
         }
 
-        val cardTempo = createClickableMetricCard("⚡ Tempo", "1.2s · W normie", "#F58220", openFullResults)
+        val cardTempo = createClickableMetricCard("Tempo", "1.2s · W normie", Palette.accent, openFullResults)
         cardTempo.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 12 }
 
-        val cardFluency = createClickableMetricCard("🌊 Płynność", "94% · Bardzo wysoka", "#2B2D91", openFullResults)
+        val cardFluency = createClickableMetricCard("Płynność", "94% · Bardzo wysoka", Palette.primary, openFullResults)
         cardFluency.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
         metricsRow.addView(cardTempo)
@@ -173,10 +173,10 @@ class SignActivity : Activity() {
         val startPracticeButton = Button(this).apply {
             text = "Nagraj znak (Rozpocznij ćwiczenie)"
             textSize = 15f
-            setTextColor(Color.WHITE)
+            setTextColor(Palette.onPrimary)
             isAllCaps = false
             val btnBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#2B2D91"))
+                setColor(Palette.primary)
                 cornerRadius = 100f
             }
             background = btnBg
@@ -198,11 +198,11 @@ class SignActivity : Activity() {
         val fullResultsButton = Button(this).apply {
             text = "Zobacz pełne wyniki"
             textSize = 15f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.primary)
             isAllCaps = false
             val btnBg = GradientDrawable().apply {
-                setColor(Color.WHITE)
-                setStroke(3, Color.parseColor("#2B2D91"))
+                setColor(Palette.surface)
+                setStroke(3, Palette.border)
                 cornerRadius = 100f
             }
             background = btnBg
@@ -219,10 +219,10 @@ class SignActivity : Activity() {
         val lessonButton = Button(this).apply {
             text = "Przejdź do Lekcji z tym znakiem"
             textSize = 15f
-            setTextColor(Color.parseColor("#F58220"))
+            setTextColor(Palette.accent)
             isAllCaps = false
             val btnBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#FFF3E0"))
+                setColor(Palette.accentTint)
                 cornerRadius = 100f
             }
             background = btnBg
@@ -245,11 +245,12 @@ class SignActivity : Activity() {
     private fun createClickableMetricCard(
         title: String,
         value: String,
-        titleColorHex: String,
+        titleColor: Int,
         onClick: () -> Unit
     ): LinearLayout {
         val cardBg = GradientDrawable().apply {
-            setColor(Color.WHITE)
+            setColor(Palette.surface)
+            setStroke(2, Palette.border)
             cornerRadius = 32f
         }
         return LinearLayout(this).apply {
@@ -261,22 +262,22 @@ class SignActivity : Activity() {
             val titleView = TextView(this@SignActivity).apply {
                 text = title
                 textSize = 13f
-                setTextColor(Color.parseColor(titleColorHex))
+                setTextColor(titleColor)
                 setTypeface(null, android.graphics.Typeface.BOLD)
             }
 
             val valueView = TextView(this@SignActivity).apply {
                 text = value
                 textSize = 14f
-                setTextColor(Color.parseColor("#2B2D91"))
+                setTextColor(Palette.text)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 setPadding(0, 4, 0, 0)
             }
 
             val linkHintView = TextView(this@SignActivity).apply {
-                text = "Kliknij ➔"
+                text = "Kliknij"
                 textSize = 11f
-                setTextColor(Color.parseColor("#7E7A93"))
+                setTextColor(Palette.textSecondary)
                 setPadding(0, 6, 0, 0)
             }
 

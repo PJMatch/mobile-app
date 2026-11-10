@@ -1,22 +1,21 @@
 package com.example.pjm_match
 
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import com.example.pjm_match.ui.Palette
 
-class BarChartFullScreenActivity : AppCompatActivity() {
+class BarChartFullScreenActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
 
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#F4F5FF"))
+            setBackgroundColor(Palette.background)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT
@@ -31,9 +30,9 @@ class BarChartFullScreenActivity : AppCompatActivity() {
         }
         
         val backBtn = TextView(this).apply {
-            text = "⬅ Wróć"
+            text = "Wróć"
             textSize = 16f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.primary)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 0, 32, 0)
             setOnClickListener { finish() }
@@ -55,14 +54,14 @@ class BarChartFullScreenActivity : AppCompatActivity() {
         val chartTitle = TextView(this).apply {
             text = "Twój tydzień"
             textSize = 24f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
         val chartDateRange = TextView(this).apply {
             text = "Dzisiaj"
             textSize = 15f
-            setTextColor(Color.parseColor("#7E7A93"))
+            setTextColor(Palette.textSecondary)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 8, 0, 0)
         }
@@ -70,7 +69,7 @@ class BarChartFullScreenActivity : AppCompatActivity() {
         val chartXpText = TextView(this).apply {
             text = "240 XP"
             textSize = 18f
-            setTextColor(Color.parseColor("#F58220"))
+            setTextColor(Palette.accent)
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
@@ -94,7 +93,8 @@ class BarChartFullScreenActivity : AppCompatActivity() {
         }
 
         val whiteCardBg = GradientDrawable().apply {
-            setColor(Color.WHITE)
+            setColor(Palette.surface)
+            setStroke(2, Palette.border)
             cornerRadius = 48f
         }
         
@@ -143,7 +143,6 @@ class BarChartFullScreenActivity : AppCompatActivity() {
             var currentTotalXp = 0
             
             if (daysCount == 1) {
-                // Konsekwentne wartości losowe oparte o seed
                 val seed = (newDateText + "0").hashCode().toLong()
                 val random = java.util.Random(seed)
                 val hasData = if (forceZero) false else random.nextDouble() > 0.3
@@ -162,7 +161,7 @@ class BarChartFullScreenActivity : AppCompatActivity() {
                 val singleDayValue = TextView(this).apply {
                     text = "$value"
                     textSize = 64f
-                    setTextColor(Color.parseColor("#F58220"))
+                    setTextColor(Palette.accent)
                     gravity = Gravity.CENTER
                     setTypeface(null, android.graphics.Typeface.BOLD)
                 }
@@ -170,7 +169,7 @@ class BarChartFullScreenActivity : AppCompatActivity() {
                 val singleDayLabel = TextView(this).apply {
                     text = "Zdobyte punkty XP"
                     textSize = 16f
-                    setTextColor(Color.parseColor("#2B2D91"))
+                    setTextColor(Palette.text)
                     gravity = Gravity.CENTER
                     setTypeface(null, android.graphics.Typeface.BOLD)
                     setPadding(0, 16, 0, 0)
@@ -189,7 +188,6 @@ class BarChartFullScreenActivity : AppCompatActivity() {
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
                     }
                     
-                    // Symulacja danych na spójnym seedzie
                     val seed = (newDateText + i.toString()).hashCode().toLong()
                     val random = java.util.Random(seed)
                     val hasData = if (forceZero) false else random.nextDouble() > 0.3
@@ -202,14 +200,14 @@ class BarChartFullScreenActivity : AppCompatActivity() {
                     val valView = TextView(this).apply {
                         text = valueStr
                         textSize = 10f
-                        setTextColor(if (isActive) Color.parseColor("#2B2D91") else Color.parseColor("#7E7A93"))
+                        setTextColor(if (isActive) Palette.text else Palette.textSecondary)
                         gravity = Gravity.CENTER
                         if (isActive) setTypeface(null, android.graphics.Typeface.BOLD)
                         setPadding(0, 0, 0, 8)
                     }
     
                     val barBg = GradientDrawable().apply {
-                        setColor(if (isActive) Color.parseColor("#F58220") else Color.parseColor("#FBD6A4"))
+                        setColor(if (isActive) Palette.accent else Palette.accentTint)
                         cornerRadius = 16f
                     }
     
@@ -249,7 +247,7 @@ class BarChartFullScreenActivity : AppCompatActivity() {
                     val labelView = TextView(this).apply {
                         text = labelStr
                         textSize = 10f
-                        setTextColor(if (isActive) Color.parseColor("#2B2D91") else Color.parseColor("#7E7A93"))
+                        setTextColor(if (isActive) Palette.text else Palette.textSecondary)
                         gravity = Gravity.CENTER
                         if (isActive) setTypeface(null, android.graphics.Typeface.BOLD)
                         setPadding(0, 8, 0, 0)
@@ -274,21 +272,21 @@ class BarChartFullScreenActivity : AppCompatActivity() {
             filterViews.forEachIndexed { i, tv ->
                 if (i == selectedIndex) {
                     tv.background = GradientDrawable().apply {
-                        setColor(Color.parseColor("#2B2D91"))
+                        setColor(Palette.primary)
                         cornerRadius = 40f
                     }
-                    tv.setTextColor(Color.WHITE)
+                    tv.setTextColor(Palette.onPrimary)
                 } else {
                     tv.background = GradientDrawable().apply {
-                        setColor(Color.parseColor("#E8EAF9"))
+                        setColor(Palette.tint)
                         cornerRadius = 40f
                     }
-                    tv.setTextColor(Color.parseColor("#2B2D91"))
+                    tv.setTextColor(Palette.text)
                 }
             }
         }
         
-        val filters = listOf("Dzisiaj", "7 dni", "30 dni", "Miesiąc", "📅 Zakres")
+        val filters = listOf("Dzisiaj", "7 dni", "30 dni", "Miesiąc", "Zakres")
         filters.forEachIndexed { index, text ->
             val pill = TextView(this).apply {
                 this.text = text

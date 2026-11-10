@@ -8,7 +8,6 @@ import android.view.ViewOutlineProvider
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import android.widget.VideoView
 import com.example.pjm_match.ui.Fonts
 import com.example.pjm_match.ui.IconSpec
@@ -198,7 +197,7 @@ class LessonActivity : BaseActivity() {
     private fun next() {
         if (!answered) return
         if (index == questions.lastIndex) {
-            Toast.makeText(this, "Lekcja ukończona! Zdobyte XP: $earnedXp", Toast.LENGTH_LONG).show()
+            toast("Lekcja ukończona! Zdobyte XP: $earnedXp", long = true)
             finish()
             return
         }
@@ -227,7 +226,7 @@ class LessonActivity : BaseActivity() {
 
     private fun playVideo() {
         if (videoView.visibility != View.VISIBLE) {
-            Toast.makeText(this, "Nagranie tego znaku nie jest jeszcze dostępne", Toast.LENGTH_SHORT).show()
+            toast("Nagranie tego znaku nie jest jeszcze dostępne")
             return
         }
         videoView.seekTo(0)
