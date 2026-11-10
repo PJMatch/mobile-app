@@ -127,7 +127,7 @@ class RegisterActivity : BaseActivity() {
         }
 
         column.place(Button(this).apply {
-            text = "Załóż konto  →"
+            text = "Załóż konto"
             textSize = 16f
             typeface = Fonts.weight(600)
             isAllCaps = false
