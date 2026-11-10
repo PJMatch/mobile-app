@@ -64,11 +64,6 @@ class LoginActivity : BaseActivity() {
             setPadding(32, 16, 32, 16)
         }
 
-        val emailIcon = TextView(this).apply {
-            text = "✉️"
-            textSize = 18f
-            setPadding(0, 0, 16, 0)
-        }
 
         val standardTypeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
 
@@ -84,7 +79,6 @@ class LoginActivity : BaseActivity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        emailContainer.addView(emailIcon)
         emailContainer.addView(emailEditText)
 
         val passwordLabelTextView = TextView(this).apply {
@@ -101,11 +95,6 @@ class LoginActivity : BaseActivity() {
             setPadding(32, 16, 32, 16)
         }
 
-        val passwordIcon = TextView(this).apply {
-            text = "🔒"
-            textSize = 18f
-            setPadding(0, 0, 16, 0)
-        }
 
         val passwordEditText = EditText(this).apply {
             hint = "Wpisz hasło"
@@ -137,7 +126,6 @@ class LoginActivity : BaseActivity() {
             }
         }
 
-        passwordContainer.addView(passwordIcon)
         passwordContainer.addView(passwordEditText)
         passwordContainer.addView(eyeToggle)
 
@@ -165,7 +153,7 @@ class LoginActivity : BaseActivity() {
                 val password = passwordEditText.text.toString().trim()
 
                 if (email.isEmpty() || password.isEmpty()) {
-                    Toast.makeText(this@LoginActivity, "Wpisz adres e-mail i hasło", Toast.LENGTH_SHORT).show()
+                    toast("Wpisz adres e-mail i hasło")
                 } else {
                     val intent = Intent(this@LoginActivity, MainActivity::class.java)
                     startActivity(intent)
@@ -194,7 +182,7 @@ class LoginActivity : BaseActivity() {
             background = secondaryButtonDrawable
             setPadding(32, 36, 32, 36)
             setOnClickListener {
-                Toast.makeText(this@LoginActivity, "Rejestracja w przygotowaniu", Toast.LENGTH_SHORT).show()
+                toast("Rejestracja w przygotowaniu")
             }
         }
 

@@ -17,7 +17,6 @@ import android.view.ViewOutlineProvider
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
@@ -179,7 +178,7 @@ class AiTranslatorActivity : BaseActivity() {
             signClassifier = PjmSignClassifier(this, signs)
         } catch (t: Throwable) {
             t.printStackTrace()
-            Toast.makeText(this, "Nie udało się wczytać modelu PJM", Toast.LENGTH_LONG).show()
+            toast("Nie udało się wczytać modelu PJM", long = true)
         }
     }
 
@@ -191,7 +190,7 @@ class AiTranslatorActivity : BaseActivity() {
             }
         } catch (t: Throwable) {
             t.printStackTrace()
-            Toast.makeText(this, "MediaPipe niedostępne na tym urządzeniu", Toast.LENGTH_LONG).show()
+            toast("MediaPipe niedostępne na tym urządzeniu", long = true)
         }
     }
 
@@ -205,7 +204,7 @@ class AiTranslatorActivity : BaseActivity() {
 
     private fun startRecording() {
         if (signClassifier == null || landmarkExtractor == null) {
-            Toast.makeText(this, "Tłumacz jest niedostępny na tym urządzeniu", Toast.LENGTH_SHORT).show()
+            toast("Tłumacz jest niedostępny na tym urządzeniu")
             return
         }
         activeRecording = PjmSignRecording()
@@ -217,7 +216,7 @@ class AiTranslatorActivity : BaseActivity() {
         activeRecording = null
         val clip = recording.resampledToTrainingFps().take(PjmSignClassifier.MAX_FRAMES)
         if (clip.size < PjmSignClassifier.MIN_FRAMES) {
-            Toast.makeText(this, "Nagranie jest za krótkie", Toast.LENGTH_SHORT).show()
+            toast("Nagranie jest za krótkie")
             setTranslationState(TranslationState.IDLE)
             return
         }
@@ -232,7 +231,7 @@ class AiTranslatorActivity : BaseActivity() {
                     .onSuccess { showRecognizedSign(it) }
                     .onFailure {
                         it.printStackTrace()
-                        Toast.makeText(this, "Błąd rozpoznawania znaku", Toast.LENGTH_SHORT).show()
+                        toast("Błąd rozpoznawania znaku")
                     }
                 setTranslationState(TranslationState.IDLE)
             }
@@ -297,7 +296,7 @@ class AiTranslatorActivity : BaseActivity() {
                 startCamera()
             } else {
                 permissionOverlayLayout.visibility = View.VISIBLE
-                Toast.makeText(this, "Wymagany dostęp do kamery do działania tłumacza", Toast.LENGTH_LONG).show()
+                toast("Wymagany dostęp do kamery do działania tłumacza", long = true)
             }
         }
     }
@@ -333,7 +332,7 @@ class AiTranslatorActivity : BaseActivity() {
             provider.bindToLifecycle(this, cameraSelector, preview, analysis)
         } catch (e: Throwable) {
             e.printStackTrace()
-            Toast.makeText(this, "Błąd uruchamiania kamery: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            toast("Błąd uruchamiania kamery: ${e.localizedMessage}")
         }
     }
 

@@ -52,7 +52,6 @@ class MainActivity : BaseActivity() {
             place(sectionTitle("Czas na kolejny gest"), top = 32, bottom = 14)
             place(lessonHero())
             place(shortcutsRow(), top = 20)
-            place(debugButton(), MATCH, 52, top = 16)
         }
     }
 
@@ -153,10 +152,4 @@ class MainActivity : BaseActivity() {
             place(icon(Icons.startArrowUpRight, color), WRAP, WRAP, top = 14)
             onTap(24, Palette.ripple, onClick)
         }
-
-    private fun debugButton() = ActionButton(this, Palette.primary).apply {
-        background = roundedRect(Palette.tint, 18, Palette.primary, 1)
-        setContent("DEBUG: Kamera z MediaPipe", Icons.trCamera, iconFirst = true)
-        onTap(18, Palette.ripple) { startActivity(Intent(this@MainActivity, MediaPipeDebugActivity::class.java)) }
-    }
 }

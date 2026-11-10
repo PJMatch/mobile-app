@@ -5,7 +5,6 @@ import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.Toast
 import com.example.pjm_match.ui.IconSpec
 import com.example.pjm_match.ui.MATCH
 import com.example.pjm_match.ui.Palette

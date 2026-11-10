@@ -32,8 +32,14 @@
             android:name=".LessonActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-        <activity android:name=".SignListActivity" />
-        <activity android:name=".SignActivity" />
+        <activity
+            android:name=".SignListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
+            android:name=".SignActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
             android:name=".StatsActivity"
             android:theme="@style/Theme.MaterialComponents.Light.NoActionBar" />
@@ -73,6 +79,10 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
             android:name=".SignResultsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
+            android:name=".SignSelectionActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <receiver android:name=".ReminderReceiver" android:exported="false" />

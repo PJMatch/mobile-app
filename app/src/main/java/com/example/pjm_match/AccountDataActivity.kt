@@ -8,7 +8,6 @@ import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.graphics.toColorInt
 import com.example.pjm_match.ui.Fonts
@@ -180,7 +179,7 @@ class AccountDataActivity : BaseActivity() {
             return
         }
         AccountProfile.save(this, name, email)
-        Toast.makeText(this, "Zapisano dane na tym urządzeniu", Toast.LENGTH_SHORT).show()
+        toast("Zapisano dane na tym urządzeniu")
         finish()
     }
 
