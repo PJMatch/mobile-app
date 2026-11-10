@@ -35,7 +35,7 @@ class AppearanceActivity : BaseActivity() {
                 place(primaryButton("Zapisz zmiany") {
                     ThemeManager.setThemeMode(this@AppearanceActivity, selectedMode)
                     finish()
-                })
+                }, MATCH, 52)
             }
         ) {
             place(backHeader())

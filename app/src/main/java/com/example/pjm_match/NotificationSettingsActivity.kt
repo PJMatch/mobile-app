@@ -30,7 +30,9 @@ class NotificationSettingsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        scaffold(Tab.PROFILE) {
+        scaffold(Tab.PROFILE, footer = {
+            place(saveButton(), MATCH, 52)
+        }) {
             place(backNav())
             place(header(), top = 12)
             place(sectionTitle("Przypomnienia o nauce"), top = 28, bottom = 14)
@@ -40,7 +42,6 @@ class NotificationSettingsActivity : BaseActivity() {
             soundsContainer = place(vertical())
             renderSounds()
             place(infoNoteRow(), top = 18, bottom = 20)
-            place(saveButton(), top = 8, bottom = 24)
         }
     }
 

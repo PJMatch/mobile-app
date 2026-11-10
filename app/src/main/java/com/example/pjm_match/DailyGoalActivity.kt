@@ -21,7 +21,7 @@ class DailyGoalActivity : BaseActivity() {
             place(primaryButton("Zapisz zmiany") {
                 DailyGoalSettings.save(this@DailyGoalActivity, selectedGoal)
                 finish()
-            })
+            }, MATCH, 52)
         }) {
             place(horizontal {
                 minimumHeight = dp(48)
