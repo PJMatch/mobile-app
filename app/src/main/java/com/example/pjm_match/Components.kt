@@ -154,4 +154,8 @@ object Icons {
     val profileVibrate = IconSpec(R.drawable.ic_vibrate, 15.84f, 11.08f)
     val profileMessages = IconSpec(R.drawable.ic_messages, 19.0f, 19.0f)
     val profileInfo = IconSpec(R.drawable.ic_info, 15.67f, 15.67f)
+    val loginMail = IconSpec(R.drawable.ic_mail, 20f, 16f)
+    val loginLock = IconSpec(R.drawable.ic_lock, 17.25f, 19.0f)
+    val loginEye = IconSpec(R.drawable.ic_eye, 20f, 16f)
+    val loginEyeOff = IconSpec(R.drawable.ic_eye_off, 20f, 16f)
 }

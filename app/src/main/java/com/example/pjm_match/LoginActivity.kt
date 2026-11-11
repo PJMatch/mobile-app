@@ -1,6 +1,7 @@
 package com.example.pjm_match
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
@@ -11,6 +12,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import com.example.pjm_match.ui.Palette
+import com.example.pjm_match.ui.icon
 
 class LoginActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,6 +66,9 @@ class LoginActivity : BaseActivity() {
             setPadding(32, 16, 32, 16)
         }
 
+        val emailIconView = icon(Icons.loginMail, Palette.textSecondary).apply {
+            imageTintList = ColorStateList.valueOf(Palette.textSecondary)
+        }
 
         val standardTypeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
 
@@ -76,9 +81,12 @@ class LoginActivity : BaseActivity() {
             background = null
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = 20
+            }
         }
 
+        emailContainer.addView(emailIconView)
         emailContainer.addView(emailEditText)
 
         val passwordLabelTextView = TextView(this).apply {
@@ -95,6 +103,9 @@ class LoginActivity : BaseActivity() {
             setPadding(32, 16, 32, 16)
         }
 
+        val passwordIconView = icon(Icons.loginLock, Palette.textSecondary).apply {
+            imageTintList = ColorStateList.valueOf(Palette.textSecondary)
+        }
 
         val passwordEditText = EditText(this).apply {
             hint = "Wpisz hasło"
@@ -105,29 +116,32 @@ class LoginActivity : BaseActivity() {
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
             typeface = standardTypeface
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = 20
+                marginEnd = 16
+            }
         }
 
-        val eyeToggle = TextView(this).apply {
-            text = "👁"
-            textSize = 18f
-            setPadding(16, 0, 0, 0)
+        val eyeToggleView = icon(Icons.loginEye, Palette.textSecondary).apply {
+            imageTintList = ColorStateList.valueOf(Palette.textSecondary)
             setOnClickListener {
                 val currentSelection = passwordEditText.selectionEnd
                 if ((passwordEditText.inputType and android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) {
                     passwordEditText.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-                    text = "👁"
+                    spec = Icons.loginEye
                 } else {
                     passwordEditText.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                    text = "👁‍🗨"
+                    spec = Icons.loginEyeOff
                 }
+                imageTintList = ColorStateList.valueOf(Palette.textSecondary)
                 passwordEditText.typeface = standardTypeface
                 passwordEditText.setSelection(currentSelection)
             }
         }
 
+        passwordContainer.addView(passwordIconView)
         passwordContainer.addView(passwordEditText)
-        passwordContainer.addView(eyeToggle)
+        passwordContainer.addView(eyeToggleView)
 
         val forgotPasswordTextView = TextView(this).apply {
             text = "Nie pamiętasz hasła?"
@@ -153,7 +167,7 @@ class LoginActivity : BaseActivity() {
                 val password = passwordEditText.text.toString().trim()
 
                 if (email.isEmpty() || password.isEmpty()) {
-                    toast("Wpisz adres e-mail i hasło")
+                    Toast.makeText(this@LoginActivity, "Wpisz adres e-mail i hasło", Toast.LENGTH_SHORT).show()
                 } else {
                     val intent = Intent(this@LoginActivity, MainActivity::class.java)
                     startActivity(intent)
@@ -182,7 +196,7 @@ class LoginActivity : BaseActivity() {
             background = secondaryButtonDrawable
             setPadding(32, 36, 32, 36)
             setOnClickListener {
-                toast("Rejestracja w przygotowaniu")
+                startActivity(Intent(this@LoginActivity, RegisterActivity::class.java))
             }
         }
 
