@@ -1,6 +1,5 @@
 package com.example.pjm_match
 
-import android.graphics.Color
 import android.os.Bundle
 import android.text.InputType
 import android.util.Patterns
@@ -47,7 +46,9 @@ class AccountDataActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.decorView.setBackgroundColor(backgroundColor)
-        scaffold(Tab.PROFILE) {
+        scaffold(Tab.PROFILE, footer = {
+            place(saveButton(), MATCH, 52)
+        }) {
             place(backNav())
             place(header(), top = 20)
             place(userSummaryCard(), top = 20)
@@ -55,8 +56,7 @@ class AccountDataActivity : BaseActivity() {
             place(userDataCard())
             place(label("Bezpieczeństwo", 20f, textColor, 700), top = 20, bottom = 10)
             place(securityCard())
-            place(infoNoteRow(), top = 18)
-            place(saveButton(), MATCH, 52, top = 12)
+            place(infoNoteRow(), top = 18, bottom = 16)
         }.setBackgroundColor(backgroundColor)
         nameInput.setText(savedInstanceState?.getString("account_name") ?: AccountProfile.name(this))
         emailInput.setText(savedInstanceState?.getString("account_email") ?: AccountProfile.email(this))
@@ -163,10 +163,7 @@ class AccountDataActivity : BaseActivity() {
             0, WRAP, 1f, start = 12)
     }
 
-    private fun saveButton(): ActionButton = primaryButton("Zapisz zmiany") { saveChanges() }.apply {
-        background = roundedRect(color("#2D2D9F", "#5848BD"), 18,
-            if (Palette.isDark) linkColor else Color.TRANSPARENT, if (Palette.isDark) 1 else 0)
-    }
+    private fun saveButton(): ActionButton = primaryButton("Zapisz zmiany") { saveChanges() }
 
     private fun saveChanges() {
         val name = nameInput.text.toString().trim()

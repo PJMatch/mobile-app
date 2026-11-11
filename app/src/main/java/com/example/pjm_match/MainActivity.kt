@@ -29,11 +29,14 @@ class MainActivity : BaseActivity() {
     override val tabRoot = Tab.START
     private lateinit var greeting: android.widget.TextView
     private lateinit var profileInitial: android.widget.TextView
+    private lateinit var goalContainer: LinearLayout
 
     override fun onResume() {
         super.onResume()
         greeting.text = "Cześć, ${AccountProfile.name(this)}!"
         profileInitial.text = AccountProfile.initial(this)
+        goalContainer.removeAllViews()
+        goalContainer.place(dailyGoalCard())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +48,7 @@ class MainActivity : BaseActivity() {
         scaffold(Tab.START) {
             place(header())
             place(statsRow(), top = 24)
-            place(dailyGoalCard(), top = 16)
+            goalContainer = place(vertical { place(dailyGoalCard()) }, top = 16)
             place(sectionTitle("Czas na kolejny gest"), top = 32, bottom = 14)
             place(lessonHero())
             place(shortcutsRow(), top = 20)
@@ -84,7 +87,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun dailyGoalCard(): LinearLayout = card {
-        val goal = LearnerStats.dailyGoalXp
+        val goal = DailyGoalSettings.get(this@MainActivity)
         val today = LearnerStats.todayXp
         place(horizontal {
             place(icon(Icons.startTarget, Palette.primary), WRAP, WRAP, end = 12)
