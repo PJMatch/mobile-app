@@ -85,9 +85,6 @@ fun Context.primaryButton(text: String, icon: IconSpec? = null, iconFirst: Boole
 fun Context.progressBar(fraction: Float, fill: Int = Palette.primary, track: Int = Palette.tint) =
     ProgressBarView(this, fill, track).apply { this.fraction = fraction }
 
-fun Context.toast(message: CharSequence, long: Boolean = false) =
-    android.widget.Toast.makeText(this, message, if (long) android.widget.Toast.LENGTH_LONG else android.widget.Toast.LENGTH_SHORT).show()
-
 fun Context.avatar(initial: String, sizeSp: Float): FrameLayout = FrameLayout(this).apply {
     background = oval(Palette.tint, Palette.surface, 3)
     place(label(initial, sizeSp, Palette.primary, 800) { gravity = Gravity.CENTER }, MATCH, MATCH)
