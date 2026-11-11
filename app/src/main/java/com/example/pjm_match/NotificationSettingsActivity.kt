@@ -160,7 +160,7 @@ class NotificationSettingsActivity : BaseActivity() {
     }
 
     private fun saveButton(): ActionButton = primaryButton("Zapisz zmiany") {
-        Toast.makeText(this, "Zapisano ustawienia", Toast.LENGTH_SHORT).show()
+        toast("Zapisano ustawienia")
         finish()
     }
 
