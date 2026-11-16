@@ -1,13 +1,15 @@
 package com.example.pjm_match
 
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.example.pjm_match.ui.IconSpec
+import com.example.pjm_match.ui.Palette
+import com.example.pjm_match.ui.iconTile
 
 class StatsActivity : BaseActivity() {
 
@@ -20,7 +22,7 @@ class StatsActivity : BaseActivity() {
             val tagTextView = TextView(this@StatsActivity).apply {
                 text = "TWÓJ ROZWÓJ"
                 textSize = 11f
-                setTextColor(Color.parseColor("#F58220"))
+                setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 letterSpacing = 0.1f
                 setPadding(0, 0, 0, 8)
@@ -29,7 +31,7 @@ class StatsActivity : BaseActivity() {
             val titleTextView = TextView(this@StatsActivity).apply {
                 text = "Widać postępy!"
                 textSize = 28f
-                setTextColor(Color.parseColor("#2B2D91"))
+                setTextColor(Palette.text)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 setPadding(0, 0, 0, 6)
             }
@@ -37,7 +39,7 @@ class StatsActivity : BaseActivity() {
             val subtitleTextView = TextView(this@StatsActivity).apply {
                 text = "Każdy gest ma znaczenie. Tak trzymaj, Aniu."
                 textSize = 13f
-                setTextColor(Color.parseColor("#7E7A93"))
+                setTextColor(Palette.textSecondary)
                 setPadding(0, 0, 0, 32)
             }
 
@@ -46,7 +48,7 @@ class StatsActivity : BaseActivity() {
             addView(subtitleTextView)
 
             val bannerBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#2B2D91"))
+                setColor(Palette.hero)
                 cornerRadius = 48f
             }
 
@@ -69,13 +71,13 @@ class StatsActivity : BaseActivity() {
             val bannerSub1 = TextView(this@StatsActivity).apply {
                 text = "Twoja aktualna seria"
                 textSize = 12f
-                setTextColor(Color.parseColor("#D0C9FF"))
+                setTextColor(Palette.heroSubtext)
             }
 
             val bannerTitle = TextView(this@StatsActivity).apply {
                 text = "7 dni z rzędu"
                 textSize = 22f
-                setTextColor(Color.WHITE)
+                setTextColor(Palette.onPrimary)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 setPadding(0, 4, 0, 4)
             }
@@ -83,23 +85,14 @@ class StatsActivity : BaseActivity() {
             val bannerSub2 = TextView(this@StatsActivity).apply {
                 text = "Twój najlepszy wynik. Brawo!"
                 textSize = 11f
-                setTextColor(Color.parseColor("#D0C9FF"))
+                setTextColor(Palette.heroSubtext)
             }
 
             bannerTextContainer.addView(bannerSub1)
             bannerTextContainer.addView(bannerTitle)
             bannerTextContainer.addView(bannerSub2)
 
-            val flameCircleBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#3D3FC7"))
-                cornerRadius = 36f
-            }
-
-            val flameIconView = TextView(this@StatsActivity).apply {
-                text = "🔥"
-                textSize = 26f
-                gravity = Gravity.CENTER
-                background = flameCircleBg
+            val flameIconView = iconTile(Icons.startFlame, Palette.accentStrong, Palette.heroIcon).apply {
                 layoutParams = LinearLayout.LayoutParams(110, 110)
             }
 
@@ -116,10 +109,10 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 16 }
             }
 
-            val card1 = createMetricCard("240 XP", "⚡", "Łączne doświadczenie", "#F58220")
+            val card1 = createMetricCard("240 XP", "", "Łączne doświadczenie", Palette.accent)
             card1.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 8 }
 
-            val card2 = createMetricCard("2", "📖", "Ukończone lekcje", "#2B2D91")
+            val card2 = createMetricCard("2", "", "Ukończone lekcje", Palette.primary)
             card2.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 8 }
 
             statsRow1.addView(card1)
@@ -133,10 +126,10 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 28 }
             }
 
-            val card3 = createMetricCard("38 min", "⏱️", "Czas nauki łącznie", "#2B2D91")
+            val card3 = createMetricCard("38 min", "", "Czas nauki łącznie", Palette.primary)
             card3.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 8 }
 
-            val card4 = createMetricCard("92%", "🎯", "Poprawne odpowiedzi", "#F58220")
+            val card4 = createMetricCard("92%", "", "Poprawne odpowiedzi", Palette.accent)
             card4.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 8 }
 
             statsRow2.addView(card3)
@@ -145,14 +138,15 @@ class StatsActivity : BaseActivity() {
             addView(statsRow1)
             addView(statsRow2)
 
-            val whiteCardBg = GradientDrawable().apply {
-                setColor(Color.WHITE)
+            fun createCardBg() = GradientDrawable().apply {
+                setColor(Palette.surface)
+                setStroke(2, Palette.border)
                 cornerRadius = 48f
             }
 
             val chartCard = LinearLayout(this@StatsActivity).apply {
                 orientation = LinearLayout.VERTICAL
-                background = whiteCardBg
+                background = createCardBg()
                 setPadding(40, 36, 40, 36)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -174,14 +168,14 @@ class StatsActivity : BaseActivity() {
             val chartMainTitle = TextView(this@StatsActivity).apply {
                 text = "Twój tydzień"
                 textSize = 17f
-                setTextColor(Color.parseColor("#2B2D91"))
+                setTextColor(Palette.text)
                 setTypeface(null, android.graphics.Typeface.BOLD)
             }
 
             val chartSubtitle = TextView(this@StatsActivity).apply {
                 text = "Dzisiaj (kliknij, by powiększyć)"
                 textSize = 11f
-                setTextColor(Color.parseColor("#7E7A93"))
+                setTextColor(Palette.textSecondary)
                 setPadding(0, 2, 0, 0)
             }
 
@@ -191,7 +185,7 @@ class StatsActivity : BaseActivity() {
             val chartXpText = TextView(this@StatsActivity).apply {
                 text = "240 XP"
                 textSize = 15f
-                setTextColor(Color.parseColor("#F58220"))
+                setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
             }
 
@@ -229,14 +223,14 @@ class StatsActivity : BaseActivity() {
                 val valView = TextView(this@StatsActivity).apply {
                     text = valueStr
                     textSize = 10f
-                    setTextColor(if (isActive) Color.parseColor("#2B2D91") else Color.parseColor("#7E7A93"))
+                    setTextColor(if (isActive) Palette.text else Palette.textSecondary)
                     gravity = Gravity.CENTER
                     if (isActive) setTypeface(null, android.graphics.Typeface.BOLD)
                     setPadding(0, 0, 0, 8)
                 }
 
                 val barBg = GradientDrawable().apply {
-                    setColor(if (isActive) Color.parseColor("#F58220") else Color.parseColor("#FBD6A4"))
+                    setColor(if (isActive) Palette.accent else Palette.accentTint)
                     cornerRadius = 16f
                 }
 
@@ -248,14 +242,14 @@ class StatsActivity : BaseActivity() {
                 val labelView = TextView(this@StatsActivity).apply {
                     text = dayName
                     textSize = 11f
-                    setTextColor(if (isActive) Color.parseColor("#2B2D91") else Color.parseColor("#7E7A93"))
+                    setTextColor(if (isActive) Palette.text else Palette.textSecondary)
                     gravity = Gravity.CENTER
                     if (isActive) setTypeface(null, android.graphics.Typeface.BOLD)
                     setPadding(0, 8, 0, 0)
                 }
 
                 barColumn.addView(valView)
-                barColumn.addView(barView)
+                barColumn.addView(barBgView(barView))
                 barColumn.addView(labelView)
                 barGraphLayout.addView(barColumn)
             }
@@ -284,14 +278,14 @@ class StatsActivity : BaseActivity() {
             val radarTitle = TextView(this@StatsActivity).apply {
                 text = "Analiza techniki"
                 textSize = 18f
-                setTextColor(Color.parseColor("#2B2D91"))
+                setTextColor(Palette.text)
                 setTypeface(null, android.graphics.Typeface.BOLD)
             }
 
             val radarDateRange = TextView(this@StatsActivity).apply {
                 text = "Dzisiaj (kliknij, by powiększyć)"
                 textSize = 13f
-                setTextColor(Color.parseColor("#F58220"))
+                setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 setPadding(0, 4, 0, 0)
             }
@@ -304,7 +298,7 @@ class StatsActivity : BaseActivity() {
 
             val radarCard = LinearLayout(this@StatsActivity).apply {
                 orientation = LinearLayout.VERTICAL
-                background = whiteCardBg.constantState?.newDrawable() as GradientDrawable
+                background = createCardBg()
                 setPadding(20, 40, 20, 40)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -338,7 +332,7 @@ class StatsActivity : BaseActivity() {
             val topicsTitle = TextView(this@StatsActivity).apply {
                 text = "Twoje tematy"
                 textSize = 18f
-                setTextColor(Color.parseColor("#2B2D91"))
+                setTextColor(Palette.text)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
@@ -346,7 +340,7 @@ class StatsActivity : BaseActivity() {
             val topicsCount = TextView(this@StatsActivity).apply {
                 text = "2 / 24 lekcje"
                 textSize = 13f
-                setTextColor(Color.parseColor("#F58220"))
+                setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
             }
 
@@ -356,7 +350,7 @@ class StatsActivity : BaseActivity() {
 
             val topicsCard = LinearLayout(this@StatsActivity).apply {
                 orientation = LinearLayout.VERTICAL
-                background = whiteCardBg.constantState?.newDrawable() as GradientDrawable
+                background = createCardBg()
                 setPadding(40, 32, 40, 32)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -390,7 +384,7 @@ class StatsActivity : BaseActivity() {
                 val nameView = TextView(this@StatsActivity).apply {
                     text = name
                     textSize = 13f
-                    setTextColor(Color.parseColor("#2B2D91"))
+                    setTextColor(Palette.text)
                     setTypeface(null, android.graphics.Typeface.BOLD)
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 }
@@ -398,14 +392,14 @@ class StatsActivity : BaseActivity() {
                 val countView = TextView(this@StatsActivity).apply {
                     text = countText
                     textSize = 12f
-                    setTextColor(Color.parseColor("#7E7A93"))
+                    setTextColor(Palette.textSecondary)
                 }
 
                 topRow.addView(nameView)
                 topRow.addView(countView)
 
                 val trackBg = GradientDrawable().apply {
-                    setColor(Color.parseColor("#E6E8F5"))
+                    setColor(Palette.tint)
                     cornerRadius = 8f
                 }
 
@@ -421,7 +415,7 @@ class StatsActivity : BaseActivity() {
 
                 if (fillRatio > 0f) {
                     val fillBg = GradientDrawable().apply {
-                        setColor(Color.parseColor("#2B2D91"))
+                        setColor(Palette.primary)
                         cornerRadius = 8f
                     }
                     val fillView = View(this@StatsActivity).apply {
@@ -441,7 +435,7 @@ class StatsActivity : BaseActivity() {
 
                 if (index < topics.size - 1) {
                     val divider = View(this@StatsActivity).apply {
-                        setBackgroundColor(Color.parseColor("#F0F1FA"))
+                        setBackgroundColor(Palette.border)
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
                             1
@@ -462,7 +456,7 @@ class StatsActivity : BaseActivity() {
             val badgesTitle = TextView(this@StatsActivity).apply {
                 text = "Małe powody do dumy"
                 textSize = 18f
-                setTextColor(Color.parseColor("#2B2D91"))
+                setTextColor(Palette.text)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
@@ -470,7 +464,7 @@ class StatsActivity : BaseActivity() {
             val badgesCount = TextView(this@StatsActivity).apply {
                 text = "2 / 6"
                 textSize = 13f
-                setTextColor(Color.parseColor("#F58220"))
+                setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
             }
 
@@ -486,13 +480,13 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 24 }
             }
 
-            val badge1 = createBadgeItem("🖐️", "Pierwszy gest", "Pierwsza lekcja", "#E8EAF9", "#2B2D91", true)
+            val badge1 = createBadgeItem(Icons.pathHand, Palette.primary, "Pierwszy gest", "Pierwsza lekcja", Palette.tint, Palette.text, true)
             badge1.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
-            val badge2 = createBadgeItem("🔥", "7 dni razem", "Tydzień nauki", "#FEF0DF", "#2B2D91", true)
+            val badge2 = createBadgeItem(Icons.startFlame, Palette.accent, "7 dni razem", "Tydzień nauki", Palette.accentTint, Palette.text, true)
             badge2.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
-            val badge3 = createBadgeItem("🔒", "Mistrz liczb", "Jeszcze przed Tobą", "#E5ECEE", "#7E7A93", false)
+            val badge3 = createBadgeItem(Icons.pathLock, Palette.textMuted, "Mistrz liczb", "Jeszcze przed Tobą", Palette.tint, Palette.textMuted, false)
             badge3.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
             badgesRow.addView(badge1)
@@ -503,9 +497,12 @@ class StatsActivity : BaseActivity() {
         }
     }
 
-    private fun createMetricCard(value: String, icon: String, label: String, iconColorHex: String): LinearLayout {
+    private fun barBgView(v: View): View = v
+
+    private fun createMetricCard(value: String, icon: String, label: String, iconColorInt: Int): LinearLayout {
         val cardBg = GradientDrawable().apply {
-            setColor(Color.WHITE)
+            setColor(Palette.surface)
+            setStroke(2, Palette.border)
             cornerRadius = 36f
         }
 
@@ -522,7 +519,7 @@ class StatsActivity : BaseActivity() {
             val valueView = TextView(this@StatsActivity).apply {
                 text = value
                 textSize = 20f
-                setTextColor(Color.parseColor("#2B2D91"))
+                setTextColor(Palette.text)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
@@ -530,7 +527,7 @@ class StatsActivity : BaseActivity() {
             val iconView = TextView(this@StatsActivity).apply {
                 text = icon
                 textSize = 16f
-                setTextColor(Color.parseColor(iconColorHex))
+                setTextColor(iconColorInt)
             }
 
             topRow.addView(valueView)
@@ -539,7 +536,7 @@ class StatsActivity : BaseActivity() {
             val labelView = TextView(this@StatsActivity).apply {
                 text = label
                 textSize = 11f
-                setTextColor(Color.parseColor("#7E7A93"))
+                setTextColor(Palette.textSecondary)
                 setPadding(0, 8, 0, 0)
             }
 
@@ -548,30 +545,25 @@ class StatsActivity : BaseActivity() {
         }
     }
 
-    private fun createBadgeItem(icon: String, title: String, subtitle: String, circleBgHex: String, textColorHex: String, isUnlocked: Boolean): LinearLayout {
+    private fun createBadgeItem(iconSpec: IconSpec, iconColorInt: Int, title: String, subtitle: String, circleBgInt: Int, textColorInt: Int, isUnlocked: Boolean): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(8, 8, 8, 8)
-            if (!isUnlocked) alpha = 0.75f
+            if (!isUnlocked) alpha = 0.6f
 
-            val circleBg = GradientDrawable().apply {
-                setColor(Color.parseColor(circleBgHex))
-                cornerRadius = 44f
-            }
-
-            val iconView = TextView(this@StatsActivity).apply {
-                text = icon
-                textSize = 24f
-                gravity = Gravity.CENTER
-                background = circleBg
+            val iconView = iconTile(iconSpec, iconColorInt, circleBgInt).apply {
+                background = GradientDrawable().apply {
+                    setColor(circleBgInt)
+                    cornerRadius = 44f
+                }
                 layoutParams = LinearLayout.LayoutParams(110, 110)
             }
 
             val titleView = TextView(this@StatsActivity).apply {
                 text = title
                 textSize = 12f
-                setTextColor(Color.parseColor(textColorHex))
+                setTextColor(textColorInt)
                 gravity = Gravity.CENTER
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 setPadding(0, 10, 0, 2)
@@ -580,7 +572,7 @@ class StatsActivity : BaseActivity() {
             val subtitleView = TextView(this@StatsActivity).apply {
                 text = subtitle
                 textSize = 10f
-                setTextColor(Color.parseColor("#7E7A93"))
+                setTextColor(Palette.textSecondary)
                 gravity = Gravity.CENTER
             }
 
@@ -591,7 +583,7 @@ class StatsActivity : BaseActivity() {
     }
 }
 
-class RadarChartView(context: android.content.Context) : android.view.View(context) {
+class RadarChartView(context: android.content.Context) : View(context) {
     var dataPoints: FloatArray = floatArrayOf(0.75f, 0.8f, 0.6f, 0.9f, 0.85f)
         set(value) {
             field = value
@@ -606,34 +598,35 @@ class RadarChartView(context: android.content.Context) : android.view.View(conte
     private val density = context.resources.displayMetrics.density
 
     private val gridPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#E6E8F5")
         style = android.graphics.Paint.Style.STROKE
         strokeWidth = 1f * density
     }
 
     private val dataPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#4D2B2D91")
         style = android.graphics.Paint.Style.FILL
     }
 
     private val dataStrokePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#2B2D91")
         style = android.graphics.Paint.Style.STROKE
         strokeWidth = 2f * density
     }
 
     private val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#7E7A93")
         textSize = 10f * density
         textAlign = android.graphics.Paint.Align.CENTER
     }
 
     override fun onDraw(canvas: android.graphics.Canvas) {
+        gridPaint.color = Palette.border
+        dataPaint.color = (Palette.primary and 0x00FFFFFF) or 0x4D000000
+        dataStrokePaint.color = Palette.primary
+        textPaint.color = Palette.textSecondary
+
         super.onDraw(canvas)
 
         val cx = width / 2f
         val cy = height / 2f
-        val radius = (Math.min(width, height) / 2f) * 0.65f
+        val radius = (kotlin.math.min(width, height) / 2f) * 0.65f
 
         val numPoints = 5
         val angleStep = Math.PI * 2 / numPoints

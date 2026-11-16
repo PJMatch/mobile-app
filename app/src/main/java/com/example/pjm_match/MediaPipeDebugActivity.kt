@@ -19,7 +19,6 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -67,7 +66,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     private lateinit var recordingStatsTextView: TextView
     private lateinit var statusTextView: TextView
     private lateinit var recordButton: Button
-    private lateinit var compareButton: Button
     private lateinit var permissionOverlayLayout: LinearLayout
 
     private var cameraProvider: ProcessCameraProvider? = null
@@ -159,7 +157,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         val headerTitle = TextView(this).apply {
-            text = "MediaPipe Debugger"
+            text = activeSignName
             textSize = 16f
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -202,43 +200,26 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
         recordButton = Button(this).apply {
             text = "Rozpocznij zbieranie punktów"
-            textSize = 13f
+            textSize = 14f
             setTextColor(Color.WHITE)
             updateRecordButtonBg(false, this)
-            setPadding(32, 20, 32, 20)
+            setPadding(32, 22, 32, 22)
             setTypeface(null, android.graphics.Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginEnd = 12
-            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
             setOnClickListener {
                 toggleRecording()
             }
         }
 
-        compareButton = Button(this).apply {
-            text = "Porównaj ze wzorcem"
-            textSize = 13f
-            setTextColor(Color.WHITE)
-            val btnBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#302B4D"))
-                setStroke(2, Color.parseColor("#B8ACFF"))
-                cornerRadius = 24f
-            }
-            background = btnBg
-            setPadding(32, 20, 32, 20)
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            setOnClickListener {
-                compareWithReference()
-            }
-        }
-
         controlsLayout.addView(recordButton)
-        controlsLayout.addView(compareButton)
         mainLayout.addView(controlsLayout)
 
         val hudLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
             setPadding(28, 20, 28, 20)
             val hudBg = GradientDrawable().apply {
                 setColor(Color.parseColor("#DD1A192B"))
@@ -474,7 +455,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         countdownOverlayTextView.visibility = View.GONE
         updateRecordButtonBg(false)
         recordingStatsTextView.text = "Odliczanie anulowane"
-        Toast.makeText(this, "Anulowano odliczanie", Toast.LENGTH_SHORT).show()
+        toast("Anulowano odliczanie")
     }
 
     private fun startActualRecording() {
@@ -489,7 +470,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
             val autoStopSec = (autoStopMs / 1000f)
             recordingStatsTextView.text = "NAGRYWANIE... (Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s)"
-            Toast.makeText(this, "NAGRYWANIE! Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s", Toast.LENGTH_SHORT).show()
+            toast("NAGRYWANIE! Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s")
 
             autoStopTimer?.cancel()
             autoStopTimer = object : CountDownTimer(autoStopMs, 500) {
@@ -508,7 +489,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             }.start()
         } else {
             recordingStatsTextView.text = "ZBIERANIE PUNKTÓW... (0 klatek)"
-            Toast.makeText(this, "NAGRYWANIE ROZPOCZĘTE! Wykonaj gest.", Toast.LENGTH_SHORT).show()
+            toast("NAGRYWANIE ROZPOCZĘTE! Wykonaj gest.")
         }
     }
 
@@ -524,14 +505,14 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             if (referenceSequence == null) {
                 referenceSequence = trimmedFrames.toList()
                 recordingStatsTextView.text = "Zbieranie zakończone: Zapisano $frameCountRecorded klatek jako WZORZEC"
-                Toast.makeText(this, "Zapisano $frameCountRecorded klatek jako WZORZEC do porównań!", Toast.LENGTH_LONG).show()
+                toast("Zapisano $frameCountRecorded klatek jako WZORZEC do porównań!", long = true)
             } else {
                 recordingStatsTextView.text = "Zbieranie zakończone: Nagrano $frameCountRecorded klatek (obcięto końcówkę)"
                 evaluateComparison(trimmedFrames, referenceSequence!!)
             }
         } else {
             recordingStatsTextView.text = "Zbieranie anulowane: Brak zebranych punktów"
-            Toast.makeText(this, "Nie wykryto punktów podczas zbierania", Toast.LENGTH_SHORT).show()
+            toast("Nie wykryto punktów podczas zbierania")
         }
     }
 
@@ -618,7 +599,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("✨ Wyniki Nagrania: $scorePoints / 100 pkt")
+            .setTitle("Wyniki Nagrania: $scorePoints / 100 pkt")
             .setMessage("Nagranie zakończone. Ocena: $stars\n\nMożesz ustawić to nagranie jako nowy wzorzec gestu lub przejść do ekranu pełnych wyników.")
             .setPositiveButton("Zobacz Pełne Wyniki") { _, _ ->
                 startActivity(resultsIntent)
@@ -626,7 +607,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             .setNeutralButton("Ustaw jako nowy wzorzec") { _, _ ->
                 referenceSequence = sample.toList()
                 recordingStatsTextView.text = "Nowy wzorzec gestu zapisany! (${sample.size} klatek)"
-                Toast.makeText(this, "Zapisano to nagranie jako nowy wzorzec do porównań!", Toast.LENGTH_LONG).show()
+                toast("Zapisano to nagranie jako nowy wzorzec do porównań!", long = true)
             }
             .setNegativeButton("Zamknij", null)
             .show()
@@ -1124,27 +1105,6 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         return if (count > 0) Point3D(sumX / count, sumY / count, sumZ / count) else Point3D(0f, 0.5f, 0f)
     }
 
-    private fun compareWithReference() {
-        val ref = referenceSequence
-        if (ref == null) {
-            if (recordedFrames.isNotEmpty()) {
-                referenceSequence = recordedFrames.toList()
-                Toast.makeText(this, "Zapisano ostatnie nagranie (${recordedFrames.size} klatek) jako wzorzec!", Toast.LENGTH_LONG).show()
-                recordingStatsTextView.text = "Wzorzec zapisany (${recordedFrames.size} klatek)"
-            } else {
-                Toast.makeText(this, "Brak zapisanego wzorca! Najpierw nagraj punkty.", Toast.LENGTH_LONG).show()
-            }
-            return
-        }
-
-        if (currentLatestPose.isNotEmpty()) {
-            val liveFrame = FrameSkeleton(SystemClock.uptimeMillis(), currentLatestPose, currentLatestHands)
-            evaluateComparison(listOf(liveFrame), ref)
-        } else {
-            Toast.makeText(this, "Nie wykryto aktualnie szkieletu w kadrze", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun calculateFrameDistance(f1: FrameSkeleton, f2: FrameSkeleton): Float {
         var totalDist = 0f
         var count = 0
@@ -1342,7 +1302,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         } catch (e: Throwable) {
             e.printStackTrace()
             statusTextView.text = "Błąd MediaPipe: ${e.localizedMessage}"
-            Toast.makeText(this, "Błąd ładownia MediaPipe JNI: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            toast("Błąd ładownia MediaPipe JNI: ${e.localizedMessage}", long = true)
         }
     }
 
@@ -1388,7 +1348,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
                 startCamera()
             } else {
                 permissionOverlayLayout.visibility = View.VISIBLE
-                Toast.makeText(this, "Kamera jest wymagana do debugera MediaPipe", Toast.LENGTH_LONG).show()
+                toast("Kamera jest wymagana do debugera MediaPipe", long = true)
             }
         }
     }

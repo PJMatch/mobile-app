@@ -1,20 +1,37 @@
 package com.example.pjm_match
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import android.widget.TextView
+import com.example.pjm_match.ui.Palette
 
-class SignListActivity : Activity() {
+class SignListActivity : BaseActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        actionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, signs) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                if (view is TextView) {
+                    view.setTextColor(Palette.text)
+                    view.setBackgroundColor(Palette.background)
+                    view.setPadding(32, 24, 32, 24)
+                }
+                return view
+            }
+        }
 
         val list = ListView(this).apply {
-            adapter = ArrayAdapter(this@SignListActivity, android.R.layout.simple_list_item_1, signs)
+            setBackgroundColor(Palette.background)
+            this.adapter = adapter
             setOnItemClickListener { _, _, position, _ ->
                 startActivity(
                     Intent(this@SignListActivity, SignActivity::class.java)

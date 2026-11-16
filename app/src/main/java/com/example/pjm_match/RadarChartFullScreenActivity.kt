@@ -1,21 +1,20 @@
 package com.example.pjm_match
 
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import com.example.pjm_match.ui.Palette
 
-class RadarChartFullScreenActivity : AppCompatActivity() {
+class RadarChartFullScreenActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
 
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#F4F5FF"))
+            setBackgroundColor(Palette.background)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT
@@ -30,9 +29,9 @@ class RadarChartFullScreenActivity : AppCompatActivity() {
         }
         
         val backBtn = TextView(this).apply {
-            text = "⬅ Wróć"
+            text = "Wróć"
             textSize = 16f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.primary)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 0, 32, 0)
             setOnClickListener { finish() }
@@ -54,14 +53,14 @@ class RadarChartFullScreenActivity : AppCompatActivity() {
         val radarTitle = TextView(this).apply {
             text = "Analiza techniki"
             textSize = 24f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
         val radarDateRange = TextView(this).apply {
             text = "Dzisiaj"
             textSize = 15f
-            setTextColor(Color.parseColor("#F58220"))
+            setTextColor(Palette.accent)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 8, 0, 0)
         }
@@ -72,7 +71,8 @@ class RadarChartFullScreenActivity : AppCompatActivity() {
         rootLayout.addView(radarHeaderLayout)
 
         val whiteCardBg = GradientDrawable().apply {
-            setColor(Color.WHITE)
+            setColor(Palette.surface)
+            setStroke(2, Palette.border)
             cornerRadius = 48f
         }
         val radarCard = LinearLayout(this).apply {
@@ -121,21 +121,21 @@ class RadarChartFullScreenActivity : AppCompatActivity() {
             filterViews.forEachIndexed { i, tv ->
                 if (i == selectedIndex) {
                     tv.background = GradientDrawable().apply {
-                        setColor(Color.parseColor("#2B2D91"))
+                        setColor(Palette.primary)
                         cornerRadius = 40f
                     }
-                    tv.setTextColor(Color.WHITE)
+                    tv.setTextColor(Palette.onPrimary)
                 } else {
                     tv.background = GradientDrawable().apply {
-                        setColor(Color.parseColor("#E8EAF9"))
+                        setColor(Palette.tint)
                         cornerRadius = 40f
                     }
-                    tv.setTextColor(Color.parseColor("#2B2D91"))
+                    tv.setTextColor(Palette.text)
                 }
             }
         }
         
-        val filters = listOf("Dzisiaj", "7 dni", "30 dni", "Miesiąc", "📅 Zakres")
+        val filters = listOf("Dzisiaj", "7 dni", "30 dni", "Miesiąc", "Zakres")
         filters.forEachIndexed { index, text ->
             val pill = TextView(this).apply {
                 this.text = text

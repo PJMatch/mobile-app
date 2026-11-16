@@ -9,7 +9,6 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -34,14 +33,17 @@ enum class Tab(val label: String, val icon: IconSpec, val activityClass: Class<o
     LEARN("Nauka", Icons.navRoute, LearningPathActivity::class.java),
     TRANSLATOR("Tłumacz AI", Icons.navScan, AiTranslatorActivity::class.java),
     STATS("Statystyki", Icons.navChart, StatsActivity::class.java),
-    PROFILE("Profil", Icons.navUser, null),
+    PROFILE("Profil", Icons.navUser, ProfileActivity::class.java),
 }
 
 abstract class BaseActivity : AppCompatActivity() {
 
     protected open val tabRoot: Tab? = null
+    private var appliedThemeIsDark: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
+        appliedThemeIsDark = Palette.isDark
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         @Suppress("DEPRECATION")
@@ -49,10 +51,18 @@ abstract class BaseActivity : AppCompatActivity() {
         @Suppress("DEPRECATION")
         window.navigationBarColor = Color.TRANSPARENT
         WindowInsetsControllerCompat(window, window.decorView).apply {
-            isAppearanceLightStatusBars = true
-            isAppearanceLightNavigationBars = true
+            isAppearanceLightStatusBars = !appliedThemeIsDark
+            isAppearanceLightNavigationBars = !appliedThemeIsDark
         }
         window.decorView.setBackgroundColor(Palette.background)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        ThemeManager.applyTheme(this)
+        if (appliedThemeIsDark != Palette.isDark) {
+            recreate()
+        }
     }
 
     fun scaffold(
@@ -121,7 +131,7 @@ abstract class BaseActivity : AppCompatActivity() {
         if (tab == tabRoot) return
         val target = tab.activityClass
         if (target == null) {
-            Toast.makeText(this, "${tab.label} w przygotowaniu", Toast.LENGTH_SHORT).show()
+            toast("${tab.label} w przygotowaniu")
             return
         }
         val home = Intent(this, MainActivity::class.java).addFlags(

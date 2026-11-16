@@ -9,9 +9,9 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import com.example.pjm_match.ui.Palette
 
-class SignResultsActivity : AppCompatActivity() {
+class SignResultsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,7 +30,7 @@ class SignResultsActivity : AppCompatActivity() {
         val jerkText = intent.getStringExtra(EXTRA_JERK) ?: "Gładka pochodna przyspieszenia (Niski wskaźnik Jerk)"
 
         val scrollView = ScrollView(this).apply {
-            setBackgroundColor(Color.parseColor("#F4F5FF"))
+            setBackgroundColor(Palette.background)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT
@@ -54,9 +54,9 @@ class SignResultsActivity : AppCompatActivity() {
         }
 
         val backBtn = TextView(this).apply {
-            text = "← Powrót do znaku"
+            text = "Powrót do znaku"
             textSize = 15f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.primary)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 0, 32, 0)
             setOnClickListener {
@@ -71,7 +71,7 @@ class SignResultsActivity : AppCompatActivity() {
         val titleHeader = TextView(this).apply {
             text = "Pełne Wyniki Gestu"
             textSize = 16f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
             gravity = Gravity.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -83,7 +83,7 @@ class SignResultsActivity : AppCompatActivity() {
 
         // 2. Score Hero Card
         val heroCardBg = GradientDrawable().apply {
-            setColor(Color.parseColor("#2B2D91"))
+            setColor(Palette.hero)
             cornerRadius = 48f
         }
 
@@ -101,7 +101,7 @@ class SignResultsActivity : AppCompatActivity() {
         val signLabel = TextView(this).apply {
             text = "ZNAK: ${signName.uppercase()}"
             textSize = 12f
-            setTextColor(Color.parseColor("#D0C9FF"))
+            setTextColor(Palette.heroSubtext)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 0, 0, 8)
         }
@@ -109,14 +109,14 @@ class SignResultsActivity : AppCompatActivity() {
         val scoreBadge = TextView(this).apply {
             text = "$score / 100 pkt"
             textSize = 36f
-            setTextColor(Color.parseColor("#FFC107"))
+            setTextColor(Palette.accentStrong)
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
         val starsLabel = TextView(this).apply {
             text = "Ocena: $stars"
             textSize = 16f
-            setTextColor(Color.WHITE)
+            setTextColor(Palette.onPrimary)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 8, 0, 0)
         }
@@ -130,7 +130,7 @@ class SignResultsActivity : AppCompatActivity() {
         val sectionTitle = TextView(this).apply {
             text = "Szczegółowa analiza wskaźników:"
             textSize = 18f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 0, 0, 20)
         }
@@ -138,18 +138,19 @@ class SignResultsActivity : AppCompatActivity() {
 
         // 4. Metric Items
         val metricsList = listOf(
-            Triple("1. Tempo i Czas Trwania", tempoText, "#F58220"),
-            Triple("2. Płynność Ruchu", fluencyText, "#2B2D91"),
-            Triple("3. Precyzja Ułożenia Dłoni", precisionText, "#2B2D91"),
-            Triple("4. Trajektoria Ruchu (DTW / Fréchet)", trajectoryText, "#5848BD"),
-            Triple("5. Orientacja Dłoni", orientationText, "#2B2D91"),
-            Triple("6. Asymetria Prędkości Oburęcznej", asymmetryText, "#2B2D91"),
-            Triple("7. Gładkość Ruchu (Pochodna Jerk)", jerkText, "#F58220")
+            Triple("1. Tempo i Czas Trwania", tempoText, Palette.accent),
+            Triple("2. Płynność Ruchu", fluencyText, Palette.primary),
+            Triple("3. Precyzja Ułożenia Dłoni", precisionText, Palette.primary),
+            Triple("4. Trajektoria Ruchu (DTW / Fréchet)", trajectoryText, Palette.primary),
+            Triple("5. Orientacja Dłoni", orientationText, Palette.primary),
+            Triple("6. Asymetria Prędkości Oburęcznej", asymmetryText, Palette.primary),
+            Triple("7. Gładkość Ruchu (Pochodna Jerk)", jerkText, Palette.accent)
         )
 
-        metricsList.forEach { (title, detail, accentColorHex) ->
+        metricsList.forEach { (title, detail, accentColor) ->
             val metricCardBg = GradientDrawable().apply {
-                setColor(Color.WHITE)
+                setColor(Palette.surface)
+                setStroke(2, Palette.border)
                 cornerRadius = 32f
             }
             val card = LinearLayout(this).apply {
@@ -165,14 +166,14 @@ class SignResultsActivity : AppCompatActivity() {
             val cardTitle = TextView(this).apply {
                 text = title
                 textSize = 14f
-                setTextColor(Color.parseColor(accentColorHex))
+                setTextColor(accentColor)
                 setTypeface(null, android.graphics.Typeface.BOLD)
             }
 
             val cardDetail = TextView(this).apply {
                 text = detail
                 textSize = 13f
-                setTextColor(Color.parseColor("#7E7A93"))
+                setTextColor(Palette.textSecondary)
                 setPadding(0, 6, 0, 0)
             }
 
@@ -185,7 +186,7 @@ class SignResultsActivity : AppCompatActivity() {
         val actionsSectionTitle = TextView(this).apply {
             text = "Dalsze kroki:"
             textSize = 18f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 24, 0, 20)
         }
@@ -195,10 +196,10 @@ class SignResultsActivity : AppCompatActivity() {
         val retryBtn = Button(this).apply {
             text = "Ponów próbę"
             textSize = 15f
-            setTextColor(Color.WHITE)
+            setTextColor(Palette.onPrimary)
             isAllCaps = false
             val btnBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#2B2D91"))
+                setColor(Palette.primary)
                 cornerRadius = 100f
             }
             background = btnBg
@@ -222,11 +223,11 @@ class SignResultsActivity : AppCompatActivity() {
         val lessonBtn = Button(this).apply {
             text = "Przejdź do Lekcji"
             textSize = 15f
-            setTextColor(Color.parseColor("#2B2D91"))
+            setTextColor(Palette.primary)
             isAllCaps = false
             val btnBg = GradientDrawable().apply {
-                setColor(Color.WHITE)
-                setStroke(3, Color.parseColor("#2B2D91"))
+                setColor(Palette.surface)
+                setStroke(3, Palette.border)
                 cornerRadius = 100f
             }
             background = btnBg
@@ -246,10 +247,10 @@ class SignResultsActivity : AppCompatActivity() {
         val radarBtn = Button(this).apply {
             text = "Radar Techniki i Statystyki"
             textSize = 15f
-            setTextColor(Color.parseColor("#F58220"))
+            setTextColor(Palette.accent)
             isAllCaps = false
             val btnBg = GradientDrawable().apply {
-                setColor(Color.parseColor("#FFF3E0"))
+                setColor(Palette.accentTint)
                 cornerRadius = 100f
             }
             background = btnBg

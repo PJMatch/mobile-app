@@ -27,6 +27,17 @@ import java.util.Locale
 class MainActivity : BaseActivity() {
 
     override val tabRoot = Tab.START
+    private lateinit var greeting: android.widget.TextView
+    private lateinit var profileInitial: android.widget.TextView
+    private lateinit var goalContainer: LinearLayout
+
+    override fun onResume() {
+        super.onResume()
+        greeting.text = "Cześć, ${AccountProfile.name(this)}!"
+        profileInitial.text = AccountProfile.initial(this)
+        goalContainer.removeAllViews()
+        goalContainer.place(dailyGoalCard())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,11 +48,10 @@ class MainActivity : BaseActivity() {
         scaffold(Tab.START) {
             place(header())
             place(statsRow(), top = 24)
-            place(dailyGoalCard(), top = 16)
+            goalContainer = place(vertical { place(dailyGoalCard()) }, top = 16)
             place(sectionTitle("Czas na kolejny gest"), top = 32, bottom = 14)
             place(lessonHero())
             place(shortcutsRow(), top = 20)
-            place(debugButton(), MATCH, 52, top = 16)
         }
     }
 
@@ -51,9 +61,11 @@ class MainActivity : BaseActivity() {
         val date = SimpleDateFormat("EEEE, d MMMM", polish).format(Date()).uppercase(polish)
         place(vertical {
             place(label(date, 12.5f, Palette.textSecondary, 700) { letterSpacing = 0.04f })
-            place(screenTitle("Cześć, ${LearnerStats.greetingName}!"), top = 6)
+            greeting = screenTitle("Cześć, ${AccountProfile.name(this@MainActivity)}!")
+            place(greeting, top = 6)
         }, 0, WRAP, 1f)
-        place(avatar(LearnerStats.initial, 20f).apply {
+        place(avatar(AccountProfile.initial(this@MainActivity), 20f).apply {
+            profileInitial = getChildAt(0) as android.widget.TextView
             contentDescription = "Profil"
             onTap(22, Palette.ripple) { openTab(Tab.PROFILE) }
         }, 44, 44, top = 8)
@@ -75,7 +87,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun dailyGoalCard(): LinearLayout = card {
-        val goal = LearnerStats.dailyGoalXp
+        val goal = DailyGoalSettings.get(this@MainActivity)
         val today = LearnerStats.todayXp
         place(horizontal {
             place(icon(Icons.startTarget, Palette.primary), WRAP, WRAP, end = 12)
@@ -140,10 +152,4 @@ class MainActivity : BaseActivity() {
             place(icon(Icons.startArrowUpRight, color), WRAP, WRAP, top = 14)
             onTap(24, Palette.ripple, onClick)
         }
-
-    private fun debugButton() = ActionButton(this, Palette.primary).apply {
-        background = roundedRect(Palette.tint, 18, Palette.primary, 1)
-        setContent("DEBUG: Kamera z MediaPipe", Icons.trCamera, iconFirst = true)
-        onTap(18, Palette.ripple) { startActivity(Intent(this@MainActivity, MediaPipeDebugActivity::class.java)) }
-    }
 }

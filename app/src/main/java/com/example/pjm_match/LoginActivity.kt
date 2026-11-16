@@ -1,8 +1,7 @@
 package com.example.pjm_match
 
-import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
+import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
@@ -12,14 +11,16 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import com.example.pjm_match.ui.Palette
+import com.example.pjm_match.ui.icon
 
-class LoginActivity : Activity() {
+class LoginActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        actionBar?.hide()
+        supportActionBar?.hide()
 
         val scrollView = ScrollView(this).apply {
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(Palette.background)
             isFillViewport = true
         }
 
@@ -32,7 +33,7 @@ class LoginActivity : Activity() {
         val titleTextView = TextView(this).apply {
             text = "PJMatch"
             textSize = 32f
-            setTextColor(Color.parseColor("#3B1895"))
+            setTextColor(Palette.primary)
             setTypeface(null, android.graphics.Typeface.BOLD)
             gravity = Gravity.CENTER
         }
@@ -40,7 +41,7 @@ class LoginActivity : Activity() {
         val subtitleTextView = TextView(this).apply {
             text = "Poznaj język migowy od podstaw"
             textSize = 15f
-            setTextColor(Color.parseColor("#7E7A93"))
+            setTextColor(Palette.textSecondary)
             gravity = Gravity.CENTER
             setPadding(0, 8, 0, 48)
         }
@@ -48,62 +49,117 @@ class LoginActivity : Activity() {
         val emailLabelTextView = TextView(this).apply {
             text = "Adres e-mail"
             textSize = 14f
-            setTextColor(Color.parseColor("#1C1635"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
         val inputDrawable = GradientDrawable().apply {
-            setColor(Color.WHITE)
-            setStroke(2, Color.parseColor("#E4E2F0"))
+            setColor(Palette.surface)
+            setStroke(2, Palette.border)
             cornerRadius = 32f
         }
 
+        val emailContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = inputDrawable
+            setPadding(32, 16, 32, 16)
+        }
+
+        val emailIconView = icon(Icons.loginMail, Palette.textSecondary).apply {
+            imageTintList = ColorStateList.valueOf(Palette.textSecondary)
+        }
+
+        val standardTypeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
+
         val emailEditText = EditText(this).apply {
             hint = "Wpisz swój adres e-mail"
-            setHintTextColor(Color.parseColor("#A8A5BE"))
-            setTextColor(Color.parseColor("#1C1635"))
+            setHintTextColor(Palette.textMuted)
+            setTextColor(Palette.text)
             textSize = 15f
-            setPadding(36, 32, 36, 32)
+            typeface = standardTypeface
+            background = null
             setSingleLine(true)
-            background = inputDrawable
             inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = 20
+            }
         }
+
+        emailContainer.addView(emailIconView)
+        emailContainer.addView(emailEditText)
 
         val passwordLabelTextView = TextView(this).apply {
             text = "Hasło"
             textSize = 14f
-            setTextColor(Color.parseColor("#1C1635"))
+            setTextColor(Palette.text)
             setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+
+        val passwordContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = inputDrawable.constantState?.newDrawable() as GradientDrawable
+            setPadding(32, 16, 32, 16)
+        }
+
+        val passwordIconView = icon(Icons.loginLock, Palette.textSecondary).apply {
+            imageTintList = ColorStateList.valueOf(Palette.textSecondary)
         }
 
         val passwordEditText = EditText(this).apply {
             hint = "Wpisz hasło"
-            setHintTextColor(Color.parseColor("#A8A5BE"))
-            setTextColor(Color.parseColor("#1C1635"))
+            setHintTextColor(Palette.textMuted)
+            setTextColor(Palette.text)
             textSize = 15f
-            setPadding(36, 32, 36, 32)
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            background = null
             setSingleLine(true)
-            background = inputDrawable
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            typeface = standardTypeface
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = 20
+                marginEnd = 16
+            }
         }
+
+        val eyeToggleView = icon(Icons.loginEye, Palette.textSecondary).apply {
+            imageTintList = ColorStateList.valueOf(Palette.textSecondary)
+            setOnClickListener {
+                val currentSelection = passwordEditText.selectionEnd
+                if ((passwordEditText.inputType and android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) {
+                    passwordEditText.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                    spec = Icons.loginEye
+                } else {
+                    passwordEditText.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                    spec = Icons.loginEyeOff
+                }
+                imageTintList = ColorStateList.valueOf(Palette.textSecondary)
+                passwordEditText.typeface = standardTypeface
+                passwordEditText.setSelection(currentSelection)
+            }
+        }
+
+        passwordContainer.addView(passwordIconView)
+        passwordContainer.addView(passwordEditText)
+        passwordContainer.addView(eyeToggleView)
 
         val forgotPasswordTextView = TextView(this).apply {
             text = "Nie pamiętasz hasła?"
             textSize = 14f
-            setTextColor(Color.parseColor("#3B1895"))
+            setTextColor(Palette.primary)
             gravity = Gravity.END
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
         val primaryButtonDrawable = GradientDrawable().apply {
-            setColor(Color.parseColor("#3B1895"))
+            setColor(Palette.primary)
             cornerRadius = 32f
         }
 
         val loginButton = Button(this).apply {
             text = "Zaloguj się"
             textSize = 16f
-            setTextColor(Color.WHITE)
+            setTextColor(Palette.onPrimary)
             background = primaryButtonDrawable
             setPadding(32, 36, 32, 36)
             setOnClickListener {
@@ -123,24 +179,24 @@ class LoginActivity : Activity() {
         val registerPromptTextView = TextView(this).apply {
             text = "Pierwszy raz z PJMatch?"
             textSize = 14f
-            setTextColor(Color.parseColor("#7E7A93"))
+            setTextColor(Palette.textSecondary)
             gravity = Gravity.CENTER
             setPadding(0, 36, 0, 16)
         }
 
         val secondaryButtonDrawable = GradientDrawable().apply {
-            setColor(Color.parseColor("#E2DEFA"))
+            setColor(Palette.tint)
             cornerRadius = 32f
         }
 
         val registerButton = Button(this).apply {
             text = "Załóż konto"
             textSize = 16f
-            setTextColor(Color.parseColor("#3B1895"))
+            setTextColor(Palette.primary)
             background = secondaryButtonDrawable
             setPadding(32, 36, 32, 36)
             setOnClickListener {
-                Toast.makeText(this@LoginActivity, "Rejestracja w przygotowaniu", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this@LoginActivity, RegisterActivity::class.java))
             }
         }
 
@@ -159,7 +215,7 @@ class LoginActivity : Activity() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 8 })
 
-        rootLayout.addView(emailEditText, LinearLayout.LayoutParams(
+        rootLayout.addView(emailContainer, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 24 })
@@ -169,7 +225,7 @@ class LoginActivity : Activity() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 8 })
 
-        rootLayout.addView(passwordEditText, LinearLayout.LayoutParams(
+        rootLayout.addView(passwordContainer, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 12 })
