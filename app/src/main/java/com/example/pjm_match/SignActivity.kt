@@ -13,22 +13,25 @@ import com.example.pjm_match.ui.Palette
 
 class SignActivity : BaseActivity() {
 
+    private lateinit var sign: String
+    private lateinit var lastScoreValue: TextView
+    private lateinit var bestScoreValue: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
 
-        val sign = intent.getStringExtra(EXTRA_SIGN) ?: "Dzień dobry"
+        sign = intent.getStringExtra(EXTRA_SIGN) ?: "Dzień dobry"
 
         val openFullResults = {
-            val intent = Intent(this@SignActivity, SignResultsActivity::class.java).apply {
-                putExtra(SignResultsActivity.EXTRA_SIGN_NAME, sign)
-                putExtra(SignResultsActivity.EXTRA_SCORE, 88)
-                putExtra(SignResultsActivity.EXTRA_STARS, "Bardzo dobry gest!")
-                putExtra(SignResultsActivity.EXTRA_TEMPO, "W normie (1.2s · Tempo zbliżone do wzorca)")
-                putExtra(SignResultsActivity.EXTRA_FLUENCY, "Wysoka płynność (94% · Brak gwałtownych szarpnięć)")
-                putExtra(SignResultsActivity.EXTRA_PRECISION, "Precyzyjne ułożenie dłoni (90% zgodności pozycji)")
+            if (SignPracticeStore.progress(this, sign) == null) {
+                toast("Nagraj znak, aby zobaczyć wyniki")
+            } else {
+                startActivity(
+                    Intent(this@SignActivity, SignResultsActivity::class.java)
+                        .putExtra(SignResultsActivity.EXTRA_SIGN_NAME, sign)
+                )
             }
-            startActivity(intent)
         }
 
         val scrollView = ScrollView(this).apply {
@@ -159,14 +162,16 @@ class SignActivity : BaseActivity() {
             ).apply { bottomMargin = 28 }
         }
 
-        val cardTempo = createClickableMetricCard("Tempo", "1.2s · W normie", Palette.accent, openFullResults)
-        cardTempo.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 12 }
+        lastScoreValue = metricValueView()
+        val cardLast = createClickableMetricCard("Ostatnia próba", lastScoreValue, Palette.accent, openFullResults)
+        cardLast.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 12 }
 
-        val cardFluency = createClickableMetricCard("Płynność", "94% · Bardzo wysoka", Palette.primary, openFullResults)
-        cardFluency.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        bestScoreValue = metricValueView()
+        val cardBest = createClickableMetricCard("Najlepszy wynik", bestScoreValue, Palette.primary, openFullResults)
+        cardBest.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
-        metricsRow.addView(cardTempo)
-        metricsRow.addView(cardFluency)
+        metricsRow.addView(cardLast)
+        metricsRow.addView(cardBest)
         rootLayout.addView(metricsRow)
 
         // 5. Main Action Buttons
@@ -242,9 +247,35 @@ class SignActivity : BaseActivity() {
         setContentView(scrollView)
     }
 
+    override fun onResume() {
+        super.onResume()
+        val progress = SignPracticeStore.progress(this, sign)
+        if (progress == null) {
+            lastScoreValue.text = "Brak prób"
+            bestScoreValue.text = "—"
+        } else {
+            val last = progress.lastAttempt
+            lastScoreValue.text = "${last.score} pkt · ${SignFeedback.rating(last.score)}"
+            bestScoreValue.text = "${progress.bestScore} pkt · ${progress.attempts} ${attemptsLabel(progress.attempts)}"
+        }
+    }
+
+    private fun attemptsLabel(count: Int): String = when {
+        count == 1 -> "próba"
+        count % 10 in 2..4 && count % 100 !in 12..14 -> "próby"
+        else -> "prób"
+    }
+
+    private fun metricValueView() = TextView(this).apply {
+        textSize = 14f
+        setTextColor(Palette.text)
+        setTypeface(null, android.graphics.Typeface.BOLD)
+        setPadding(0, 4, 0, 0)
+    }
+
     private fun createClickableMetricCard(
         title: String,
-        value: String,
+        valueView: TextView,
         titleColor: Int,
         onClick: () -> Unit
     ): LinearLayout {
@@ -264,14 +295,6 @@ class SignActivity : BaseActivity() {
                 textSize = 13f
                 setTextColor(titleColor)
                 setTypeface(null, android.graphics.Typeface.BOLD)
-            }
-
-            val valueView = TextView(this@SignActivity).apply {
-                text = value
-                textSize = 14f
-                setTextColor(Palette.text)
-                setTypeface(null, android.graphics.Typeface.BOLD)
-                setPadding(0, 4, 0, 0)
             }
 
             val linkHintView = TextView(this@SignActivity).apply {

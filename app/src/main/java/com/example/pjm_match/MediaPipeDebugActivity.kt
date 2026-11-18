@@ -31,21 +31,18 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
-import com.google.mediapipe.tasks.core.BaseOptions
-import com.google.mediapipe.tasks.core.Delegate
-import com.google.mediapipe.tasks.vision.core.RunningMode
-import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
-import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.sqrt
 import kotlin.math.abs
 import kotlin.math.acos
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 data class Point3D(val x: Float, val y: Float, val z: Float)
 
@@ -73,9 +70,11 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     private var imageAnalysis: ImageAnalysis? = null
     private val cameraExecutor = Executors.newSingleThreadExecutor()
 
-    private var poseLandmarker: PoseLandmarker? = null
-    private var handLandmarker: HandLandmarker? = null
-    private var lastFrameTime = 0L
+    private var landmarkExtractor: PjmLandmarkExtractor? = null
+    private var signClassifier: PjmSignClassifier? = null
+    private val recognitionExecutor = Executors.newSingleThreadExecutor()
+    private var modelRecording: PjmSignRecording? = null
+    @Volatile private var mirrorLandmarks = true
 
     private var frameCount = 0
     private var lastFpsTimestamp = SystemClock.uptimeMillis()
@@ -92,8 +91,13 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     private var currentLatestPose: List<Point3D> = emptyList()
     private var currentLatestHands: List<List<Point3D>> = emptyList()
 
+    private class ReferenceEvaluation(val distance: Float, val score: Int, val metrics: List<GestureMetric>)
+
     companion object {
         private const val CAMERA_PERMISSION_REQUEST_CODE = 2002
+        private const val MAX_REFERENCE_DISTANCE = 2.0f
+        private const val RECORDING_WITHOUT_REFERENCE_MS = 4000L
+        private const val RECORDING_TAIL_MS = 1200L
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -334,6 +338,7 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         setContentView(mainLayout)
 
         loadReferencePatternFromAssets()
+        setupSignRecognition()
         setupMediaPipe()
         checkAndStartCamera()
     }
@@ -343,6 +348,10 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             val jsonString = assets.open("gesture_reference.json").bufferedReader().use { it.readText() }
             val jsonObject = JSONObject(jsonString)
             val gestureName = jsonObject.optString("gestureName", "Wzorzec")
+            if (!gestureName.equals(activeSignName, ignoreCase = true)) {
+                recordingStatsTextView.text = "Brak wzorca ruchu dla znaku $activeSignName"
+                return
+            }
             val framesArray = jsonObject.optJSONArray("frames") ?: JSONArray()
 
             val loadedFrames = mutableListOf<FrameSkeleton>()
@@ -461,36 +470,34 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     private fun startActualRecording() {
         isRecording = true
         recordedFrames.clear()
+        modelRecording = PjmSignRecording()
         updateRecordButtonBg(true)
 
         val ref = referenceSequence
-        if (ref != null && ref.size > 1) {
-            val refDurationMs = max(1000L, ref.last().timestampMs - ref.first().timestampMs)
-            val autoStopMs = refDurationMs + 1200L
-
-            val autoStopSec = (autoStopMs / 1000f)
-            recordingStatsTextView.text = "NAGRYWANIE... (Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s)"
-            toast("NAGRYWANIE! Auto-Stop za ${String.format(java.util.Locale.US, "%.1f", autoStopSec)}s")
-
-            autoStopTimer?.cancel()
-            autoStopTimer = object : CountDownTimer(autoStopMs, 500) {
-                override fun onTick(millisUntilFinished: Long) {
-                    if (isRecording) {
-                        val secLeft = String.format(java.util.Locale.US, "%.1f", millisUntilFinished / 1000f)
-                        recordingStatsTextView.text = "ZBIERANIE: ${recordedFrames.size} klatek (Auto-Stop za ${secLeft}s)"
-                    }
-                }
-
-                override fun onFinish() {
-                    if (isRecording) {
-                        stopRecordingAndEvaluate()
-                    }
-                }
-            }.start()
+        val autoStopMs = if (ref != null && ref.size > 1) {
+            max(1000L, ref.last().timestampMs - ref.first().timestampMs) + RECORDING_TAIL_MS
         } else {
-            recordingStatsTextView.text = "ZBIERANIE PUNKTÓW... (0 klatek)"
-            toast("NAGRYWANIE ROZPOCZĘTE! Wykonaj gest.")
+            RECORDING_WITHOUT_REFERENCE_MS
         }
+        val autoStopSec = String.format(Locale.US, "%.1f", autoStopMs / 1000f)
+        recordingStatsTextView.text = "NAGRYWANIE... (Auto-Stop za ${autoStopSec}s)"
+        toast("NAGRYWANIE! Wykonaj znak. Auto-Stop za ${autoStopSec}s")
+
+        autoStopTimer?.cancel()
+        autoStopTimer = object : CountDownTimer(autoStopMs, 500) {
+            override fun onTick(millisUntilFinished: Long) {
+                if (isRecording) {
+                    val secLeft = String.format(Locale.US, "%.1f", millisUntilFinished / 1000f)
+                    recordingStatsTextView.text = "ZBIERANIE: ${recordedFrames.size} klatek (Auto-Stop za ${secLeft}s)"
+                }
+            }
+
+            override fun onFinish() {
+                if (isRecording) {
+                    stopRecordingAndEvaluate()
+                }
+            }
+        }.start()
     }
 
     private fun stopRecordingAndEvaluate() {
@@ -498,22 +505,109 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         isRecording = false
         updateRecordButtonBg(false)
 
-        val trimmedFrames = trimTrailingGarbageFrames(recordedFrames)
-        val frameCountRecorded = trimmedFrames.size
+        val trimmedFrames = trimTrailingGarbageFrames(recordedFrames.toList())
+        val clip = modelRecording?.resampledToTrainingFps()?.take(PjmSignClassifier.MAX_FRAMES).orEmpty()
+        modelRecording = null
 
-        if (frameCountRecorded > 0) {
-            if (referenceSequence == null) {
-                referenceSequence = trimmedFrames.toList()
-                recordingStatsTextView.text = "Zbieranie zakończone: Zapisano $frameCountRecorded klatek jako WZORZEC"
-                toast("Zapisano $frameCountRecorded klatek jako WZORZEC do porównań!", long = true)
-            } else {
-                recordingStatsTextView.text = "Zbieranie zakończone: Nagrano $frameCountRecorded klatek (obcięto końcówkę)"
-                evaluateComparison(trimmedFrames, referenceSequence!!)
+        val classifier = signClassifier?.takeIf { it.recognizes(activeSignName) }
+        if (classifier == null) {
+            evaluateWithReferenceOnly(trimmedFrames)
+            return
+        }
+        if (clip.size < PjmSignClassifier.MIN_FRAMES) {
+            recordingStatsTextView.text = "Nagranie za krótkie"
+            toast("Nagranie jest za krótkie. Upewnij się, że widać Cię w kadrze.")
+            return
+        }
+
+        recordingStatsTextView.text = "Analiza nagrania przez model..."
+        recordButton.isEnabled = false
+        recordButton.text = "Ocenianie..."
+        recognitionExecutor.execute {
+            val predictions = runCatching { classifier.rank(clip) }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                recordButton.isEnabled = true
+                updateRecordButtonBg(false)
+                predictions
+                    .onSuccess { evaluateWithModel(it, trimmedFrames) }
+                    .onFailure {
+                        it.printStackTrace()
+                        recordingStatsTextView.text = "Błąd oceny modelu"
+                        toast("Nie udało się ocenić znaku")
+                    }
             }
+        }
+    }
+
+    private fun evaluateWithModel(predictions: List<SignPrediction>, frames: List<FrameSkeleton>) {
+        val targetConfidence = predictions.firstOrNull { it.gloss == activeSignName }?.confidence ?: 0f
+        val score = (targetConfidence * 100).roundToInt().coerceIn(0, 100)
+        val reference = referenceSequence
+        val metrics = if (reference != null && frames.isNotEmpty()) {
+            evaluateAgainstReference(frames, reference).metrics
         } else {
+            emptyList()
+        }
+        recordingStatsTextView.text = "Ocena modelu: $score / 100 pkt"
+        presentAttempt(SignAttempt(activeSignName, score, predictions, metrics, System.currentTimeMillis()), frames)
+    }
+
+    private fun evaluateWithReferenceOnly(frames: List<FrameSkeleton>) {
+        if (frames.isEmpty()) {
             recordingStatsTextView.text = "Zbieranie anulowane: Brak zebranych punktów"
             toast("Nie wykryto punktów podczas zbierania")
+            return
         }
+        val reference = referenceSequence
+        if (reference == null) {
+            referenceSequence = frames
+            recordingStatsTextView.text = "Zbieranie zakończone: Zapisano ${frames.size} klatek jako WZORZEC"
+            toast("Zapisano ${frames.size} klatek jako WZORZEC do porównań!", long = true)
+            return
+        }
+
+        val evaluation = evaluateAgainstReference(frames, reference)
+        if (evaluation.distance > MAX_REFERENCE_DISTANCE) {
+            AlertDialog.Builder(this)
+                .setTitle("Zły gest (Odrzucono)")
+                .setMessage(
+                    "Ten gest jest całkowicie niezgodny ze wzorcem.\n\n" +
+                        "Zbyt duża różnica w ułożeniu dłoni lub trajektorii.\n" +
+                        "(Odległość DTW: ${String.format(Locale.US, "%.3f", evaluation.distance)} > 2.00)\n\n" +
+                        "Spróbuj ponownie!"
+                )
+                .setPositiveButton("Zamknij", null)
+                .show()
+            return
+        }
+        recordingStatsTextView.text = "Zbieranie zakończone: Nagrano ${frames.size} klatek"
+        presentAttempt(SignAttempt(activeSignName, evaluation.score, emptyList(), evaluation.metrics, System.currentTimeMillis()), frames)
+    }
+
+    private fun presentAttempt(attempt: SignAttempt, frames: List<FrameSkeleton>) {
+        val progress = SignPracticeStore.save(this, attempt)
+        val message = buildString {
+            append("Ocena: ").append(SignFeedback.rating(attempt.score)).append("\n\n")
+            append(SignFeedback.summary(attempt)).append("\n\n")
+            append("Najlepszy wynik: ${progress.bestScore} / 100 · Próba nr ${progress.attempts}")
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Wynik: ${attempt.score} / 100 pkt")
+            .setMessage(message)
+            .setPositiveButton("Zobacz pełne wyniki") { _, _ ->
+                startActivity(
+                    Intent(this, SignResultsActivity::class.java)
+                        .putExtra(SignResultsActivity.EXTRA_SIGN_NAME, activeSignName)
+                )
+            }
+            .setNeutralButton("Ustaw jako nowy wzorzec") { _, _ ->
+                referenceSequence = frames
+                recordingStatsTextView.text = "Nowy wzorzec gestu zapisany! (${frames.size} klatek)"
+                toast("Zapisano to nagranie jako nowy wzorzec do porównań!", long = true)
+            }
+            .setNegativeButton("Zamknij", null)
+            .show()
     }
 
     private fun trimTrailingGarbageFrames(rawFrames: List<FrameSkeleton>): List<FrameSkeleton> {
@@ -543,74 +637,27 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         return if (trimmed.isNotEmpty()) trimmed else rawFrames
     }
 
-    private fun evaluateComparison(sample: List<FrameSkeleton>, reference: List<FrameSkeleton>) {
-        if (sample.isEmpty() || reference.isEmpty()) return
-
+    private fun evaluateAgainstReference(sample: List<FrameSkeleton>, reference: List<FrameSkeleton>): ReferenceEvaluation {
         val activeSample = extractActiveMotionFrames(sample)
         val activeReference = extractActiveMotionFrames(reference)
 
         val rawDtwDistance = calculateDtwDistance(activeSample, activeReference)
-
-        if (rawDtwDistance > 2.0f) {
-            val rejectMessage = "Ten gest jest całkowicie niezgodny ze wzorcem.\n\n" +
-                                "Zbyt duża różnica w ułożeniu dłoni lub trajektorii.\n" +
-                                "(Odległość DTW: ${String.format(java.util.Locale.US, "%.3f", rawDtwDistance)} > 2.00)\n\n" +
-                                "Spróbuj ponownie!"
-            
-            AlertDialog.Builder(this)
-                .setTitle("Zły gest (Odrzucono)")
-                .setMessage(rejectMessage)
-                .setPositiveButton("Zamknij", null)
-                .show()
-            return
-        }
-
         val adjustedDtwDistance = rawDtwDistance * 0.95f
         val similarityPercent = (max(0f, (1f - adjustedDtwDistance * 0.45f) * 100f) + 5f).coerceIn(0f, 100f)
         val scorePoints = similarityPercent.toInt().coerceIn(0, 100)
 
-        val stars = when {
-            scorePoints >= 90 -> "(Doskonale!)"
-            scorePoints >= 75 -> "(Bardzo dobrze!)"
-            scorePoints >= 60 -> "(Dobry wynik)"
-            else -> "(Wymaga ćwiczeń)"
-        }
+        fun metric(title: String, info: Pair<String, String>) = GestureMetric(title, "${info.first} (${info.second})")
 
-        val speedInfo = analyzeUserFriendlySpeed(activeSample, activeReference)
-        val smoothnessInfo = analyzeUserFriendlySmoothness(activeSample)
-        val trajectoryInfo = analyzeUserFriendlyTrajectory(rawDtwDistance, activeSample, activeReference)
-
-        val frechetTrajectoryInfo = analyzeFrechetTrajectoryAndCompleteness(rawDtwDistance, activeSample, activeReference)
-        val orientationInfo = analyzePalmOrientation(activeSample, activeReference)
-        val asymmetryInfo = analyzeBimanualVelocityAsymmetry(activeSample, activeReference)
-        val jerkSmoothnessInfo = analyzeMovementJerkSmoothness(activeSample)
-
-        val resultsIntent = Intent(this, SignResultsActivity::class.java).apply {
-            putExtra(SignResultsActivity.EXTRA_SIGN_NAME, activeSignName)
-            putExtra(SignResultsActivity.EXTRA_SCORE, scorePoints)
-            putExtra(SignResultsActivity.EXTRA_STARS, stars)
-            putExtra(SignResultsActivity.EXTRA_TEMPO, "${speedInfo.first} (${speedInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_FLUENCY, "${smoothnessInfo.first} (${smoothnessInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_PRECISION, "${trajectoryInfo.first} (${trajectoryInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_TRAJECTORY, "${frechetTrajectoryInfo.first} (${frechetTrajectoryInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_ORIENTATION, "${orientationInfo.first} (${orientationInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_ASYMMETRY, "${asymmetryInfo.first} (${asymmetryInfo.second})")
-            putExtra(SignResultsActivity.EXTRA_JERK, "${jerkSmoothnessInfo.first} (${jerkSmoothnessInfo.second})")
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle("Wyniki Nagrania: $scorePoints / 100 pkt")
-            .setMessage("Nagranie zakończone. Ocena: $stars\n\nMożesz ustawić to nagranie jako nowy wzorzec gestu lub przejść do ekranu pełnych wyników.")
-            .setPositiveButton("Zobacz Pełne Wyniki") { _, _ ->
-                startActivity(resultsIntent)
-            }
-            .setNeutralButton("Ustaw jako nowy wzorzec") { _, _ ->
-                referenceSequence = sample.toList()
-                recordingStatsTextView.text = "Nowy wzorzec gestu zapisany! (${sample.size} klatek)"
-                toast("Zapisano to nagranie jako nowy wzorzec do porównań!", long = true)
-            }
-            .setNegativeButton("Zamknij", null)
-            .show()
+        val metrics = listOf(
+            metric("Tempo i czas trwania", analyzeUserFriendlySpeed(activeSample, activeReference)),
+            metric("Płynność ruchu", analyzeUserFriendlySmoothness(activeSample)),
+            metric("Precyzja ułożenia dłoni", analyzeUserFriendlyTrajectory(rawDtwDistance, activeSample, activeReference)),
+            metric("Trajektoria ruchu (DTW / Fréchet)", analyzeFrechetTrajectoryAndCompleteness(rawDtwDistance, activeSample, activeReference)),
+            metric("Orientacja dłoni", analyzePalmOrientation(activeSample, activeReference)),
+            metric("Asymetria prędkości oburęcznej", analyzeBimanualVelocityAsymmetry(activeSample, activeReference)),
+            metric("Gładkość ruchu (pochodna Jerk)", analyzeMovementJerkSmoothness(activeSample)),
+        )
+        return ReferenceEvaluation(rawDtwDistance, scorePoints, metrics)
     }
 
     private fun extractActiveMotionFrames(rawFrames: List<FrameSkeleton>): List<FrameSkeleton> {
@@ -1176,14 +1223,14 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         return totalCost / (n + m)
     }
 
-    private fun collectFramePoints(pose: List<NormalizedLandmark>, hands: List<List<NormalizedLandmark>>) {
+    private fun collectFramePoints(timestampMs: Long, pose: List<NormalizedLandmark>, hands: List<List<NormalizedLandmark>>) {
         val (normalizedPose, normalizedHands) = normalizeSkeletonScale(pose, hands)
 
         currentLatestPose = normalizedPose
         currentLatestHands = normalizedHands
 
         if (isRecording && (normalizedPose.isNotEmpty() || normalizedHands.isNotEmpty())) {
-            recordedFrames.add(FrameSkeleton(SystemClock.uptimeMillis(), normalizedPose, normalizedHands))
+            recordedFrames.add(FrameSkeleton(timestampMs, normalizedPose, normalizedHands))
             val frameCountNow = recordedFrames.size
             val totalPointsNow = recordedFrames.sumOf { f -> f.poseLandmarks.size + f.handLandmarks.sumOf { h -> h.size } }
             recordingStatsTextView.text = "ZBIERANIE PUNKTÓW: $frameCountNow klatek ($totalPointsNow pkt)"
@@ -1230,81 +1277,55 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         return Pair(normalizedPose, normalizedHands)
     }
 
+    private fun setupSignRecognition() {
+        try {
+            signClassifier = PjmSignClassifier(this, signs + activeSignName)
+            if (signClassifier?.recognizes(activeSignName) != true) {
+                statusTextView.text = "Model nie zna znaku $activeSignName"
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            toast("Nie udało się wczytać modelu PJM", long = true)
+        }
+    }
+
     private fun setupMediaPipe() {
         try {
-            val poseBaseOptions = BaseOptions.builder()
-                .setModelAssetPath("pose_landmarker_lite.task")
-                .setDelegate(Delegate.CPU)
-                .build()
-
-            val poseOptions = PoseLandmarker.PoseLandmarkerOptions.builder()
-                .setBaseOptions(poseBaseOptions)
-                .setRunningMode(RunningMode.LIVE_STREAM)
-                .setResultListener { result, _ ->
-                    val landmarks = result.landmarks()
-                    val count = if (landmarks.isNotEmpty()) landmarks[0].size else 0
-                    val poseList = if (landmarks.isNotEmpty()) landmarks[0] else emptyList()
-                    val handList = skeletonOverlayView.getHandLandmarks()
-
-                    collectFramePoints(poseList, handList)
-
-                    runOnUiThread {
-                        skeletonOverlayView.setPoseLandmarks(landmarks)
-                        poseStatsTextView.text = if (count > 0) {
-                            "Pose Landmarks: Wykryto $count punktów"
-                        } else {
-                            "Pose Landmarks: Szukanie..."
-                        }
-                        updateFpsCounter()
-                    }
-                }
-                .setErrorListener { error ->
-                    error.printStackTrace()
-                }
-                .build()
-
-            poseLandmarker = PoseLandmarker.createFromOptions(this, poseOptions)
-
-            val handBaseOptions = BaseOptions.builder()
-                .setModelAssetPath("hand_landmarker.task")
-                .setDelegate(Delegate.CPU)
-                .build()
-
-            val handOptions = HandLandmarker.HandLandmarkerOptions.builder()
-                .setBaseOptions(handBaseOptions)
-                .setRunningMode(RunningMode.LIVE_STREAM)
-                .setNumHands(2)
-                .setMinHandDetectionConfidence(0.1f)
-                .setMinHandPresenceConfidence(0.1f)
-                .setMinTrackingConfidence(0.1f)
-                .setMinHandPresenceConfidence(0.3f)
-                .setMinTrackingConfidence(0.3f)
-                .setResultListener { result, _ ->
-                    val landmarks = result.landmarks()
-                    val totalHandPoints = landmarks.sumOf { it.size }
-                    val handsDetected = landmarks.size
-                    runOnUiThread {
-                        skeletonOverlayView.setHandLandmarks(landmarks)
-                        handStatsTextView.text = if (handsDetected > 0) {
-                            "Hand Landmarks: Wykryto $handsDetected dłonie ($totalHandPoints pkt)"
-                        } else {
-                            "Hand Landmarks: Szukanie..."
-                        }
-                    }
-                }
-                .setErrorListener { error ->
-                    error.printStackTrace()
-                }
-                .build()
-
-            handLandmarker = HandLandmarker.createFromOptions(this, handOptions)
-            statusTextView.text = "Status: MediaPipe Gotowy (CPU)"
+            landmarkExtractor = PjmLandmarkExtractor(this) { skeleton ->
+                runOnUiThread { onSkeleton(skeleton) }
+            }
+            statusTextView.text = "Status: MediaPipe Gotowy (sylwetka, dłonie, twarz)"
         } catch (e: Throwable) {
             e.printStackTrace()
             statusTextView.text = "Błąd MediaPipe: ${e.localizedMessage}"
-            toast("Błąd ładownia MediaPipe JNI: ${e.localizedMessage}", long = true)
+            toast("Błąd ładowania MediaPipe: ${e.localizedMessage}", long = true)
         }
     }
+
+    private fun onSkeleton(skeleton: PjmSkeleton) {
+        if (isDestroyed) return
+        modelRecording?.add(skeleton.timestampMs, skeleton.toModelFrame())
+
+        val mirror = mirrorLandmarks
+        val pose = skeleton.pose.mirroredIf(mirror)
+        val hands = listOf(skeleton.leftHand, skeleton.rightHand)
+            .filter { it.isNotEmpty() }
+            .map { it.mirroredIf(mirror) }
+
+        collectFramePoints(skeleton.timestampMs, pose, hands)
+
+        skeletonOverlayView.setLandmarks(if (pose.isEmpty()) emptyList() else listOf(pose), hands)
+        poseStatsTextView.text = if (pose.isNotEmpty()) "Pose Landmarks: Wykryto ${pose.size} punktów" else "Pose Landmarks: Szukanie..."
+        handStatsTextView.text = if (hands.isNotEmpty()) {
+            "Hand Landmarks: Wykryto ${hands.size} dłonie (${hands.sumOf { it.size }} pkt)"
+        } else {
+            "Hand Landmarks: Szukanie..."
+        }
+        updateFpsCounter()
+    }
+
+    private fun List<NormalizedLandmark>.mirroredIf(mirror: Boolean): List<NormalizedLandmark> =
+        if (!mirror) this else map { NormalizedLandmark.create(1f - it.x(), it.y(), it.z(), it.visibility(), it.presence()) }
 
     private fun updateFpsCounter() {
         frameCount++
@@ -1371,7 +1392,10 @@ class MediaPipeDebugActivity : AppCompatActivity() {
 
         val analysis = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .build()
+
+        mirrorLandmarks = cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA
 
         analysis.setAnalyzer(cameraExecutor) { imageProxy ->
             processImageProxy(imageProxy)
@@ -1390,31 +1414,10 @@ class MediaPipeDebugActivity : AppCompatActivity() {
     @OptIn(ExperimentalGetImage::class)
     private fun processImageProxy(imageProxy: ImageProxy) {
         try {
-            var frameTime = SystemClock.uptimeMillis()
-            if (frameTime <= lastFrameTime) {
-                frameTime = lastFrameTime + 1
-            }
-            lastFrameTime = frameTime
-
             val bitmap = imageProxy.toBitmap()
-            val isFront = (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA)
-            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-
-            val matrix = Matrix().apply {
-                postRotate(rotationDegrees.toFloat())
-                if (isFront) {
-                    postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
-                }
-            }
-
-            val rotatedBitmap = Bitmap.createBitmap(
-                bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
-            )
-
-            val mpImage = BitmapImageBuilder(rotatedBitmap).build()
-
-            poseLandmarker?.detectAsync(mpImage, frameTime)
-            handLandmarker?.detectAsync(mpImage, frameTime)
+            val matrix = Matrix().apply { postRotate(imageProxy.imageInfo.rotationDegrees.toFloat()) }
+            val uprightBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            landmarkExtractor?.detectAsync(uprightBitmap, SystemClock.uptimeMillis())
         } catch (e: Throwable) {
             e.printStackTrace()
         } finally {
@@ -1435,9 +1438,13 @@ class MediaPipeDebugActivity : AppCompatActivity() {
         super.onDestroy()
         countdownTimer?.cancel()
         autoStopTimer?.cancel()
+        cameraProvider?.unbindAll()
         cameraExecutor.shutdown()
-        poseLandmarker?.close()
-        handLandmarker?.close()
+        cameraExecutor.awaitTermination(500, TimeUnit.MILLISECONDS)
+        landmarkExtractor?.close()
+        recognitionExecutor.shutdown()
+        recognitionExecutor.awaitTermination(2, TimeUnit.SECONDS)
+        signClassifier?.close()
     }
 
     private fun dpToPx(context: Context, dp: Int): Int {
@@ -1489,18 +1496,10 @@ class MediaPipeDebugActivity : AppCompatActivity() {
             Pair(5, 9), Pair(9, 13), Pair(13, 17)
         )
 
-        fun setPoseLandmarks(landmarks: List<List<NormalizedLandmark>>) {
-            this.poseLandmarksList = landmarks
+        fun setLandmarks(pose: List<List<NormalizedLandmark>>, hands: List<List<NormalizedLandmark>>) {
+            poseLandmarksList = pose
+            handLandmarksList = hands
             invalidate()
-        }
-
-        fun setHandLandmarks(landmarks: List<List<NormalizedLandmark>>) {
-            this.handLandmarksList = landmarks
-            invalidate()
-        }
-
-        fun getHandLandmarks(): List<List<NormalizedLandmark>> {
-            return handLandmarksList ?: emptyList()
         }
 
         override fun onDraw(canvas: Canvas) {

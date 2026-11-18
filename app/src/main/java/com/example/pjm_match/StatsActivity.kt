@@ -14,9 +14,13 @@ import com.example.pjm_match.ui.iconTile
 class StatsActivity : BaseActivity() {
 
     override val tabRoot = Tab.STATS
+    private var shownAttempts = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        shownAttempts = SignPracticeStore.totalAttempts(this)
+        val practicedSigns = SignPracticeStore.loadAll(this).sortedByDescending { it.lastAttempt.timestampMs }
+        val averageSignScore = SignPracticeStore.averageBestScore(this)
 
         scaffold(Tab.STATS) {
             val tagTextView = TextView(this@StatsActivity).apply {
@@ -129,7 +133,7 @@ class StatsActivity : BaseActivity() {
             val card3 = createMetricCard("38 min", "", "Czas nauki łącznie", Palette.primary)
             card3.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 8 }
 
-            val card4 = createMetricCard("92%", "", "Poprawne odpowiedzi", Palette.accent)
+            val card4 = createMetricCard(averageSignScore?.let { "$it%" } ?: "—", "", "Średnia ocena gestów", Palette.accent)
             card4.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 8 }
 
             statsRow2.addView(card3)
@@ -447,6 +451,8 @@ class StatsActivity : BaseActivity() {
 
             addView(topicsCard)
 
+            addPracticedSignsSection(this, practicedSigns)
+
             val badgesHeaderLayout = LinearLayout(this@StatsActivity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -495,6 +501,116 @@ class StatsActivity : BaseActivity() {
 
             addView(badgesRow)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (SignPracticeStore.totalAttempts(this) != shownAttempts) recreate()
+    }
+
+    private fun addPracticedSignsSection(parent: LinearLayout, practicedSigns: List<SignProgress>) {
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, 16)
+        }
+        header.addView(TextView(this).apply {
+            text = "Ćwiczone znaki"
+            textSize = 18f
+            setTextColor(Palette.text)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        header.addView(TextView(this).apply {
+            text = "ocena modelu"
+            textSize = 13f
+            setTextColor(Palette.accent)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+        parent.addView(header)
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = GradientDrawable().apply {
+                setColor(Palette.surface)
+                setStroke(2, Palette.border)
+                cornerRadius = 48f
+            }
+            setPadding(40, 32, 40, 32)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 32 }
+        }
+
+        if (practicedSigns.isEmpty()) {
+            card.addView(TextView(this).apply {
+                text = "Nagraj swój pierwszy znak przed kamerą, a tutaj zobaczysz, jak ocenił go model."
+                textSize = 13f
+                setTextColor(Palette.textSecondary)
+            })
+        }
+
+        practicedSigns.forEachIndexed { index, progress ->
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, if (index == 0) 0 else 18, 0, 18)
+                setOnClickListener {
+                    startActivity(
+                        Intent(this@StatsActivity, SignResultsActivity::class.java)
+                            .putExtra(SignResultsActivity.EXTRA_SIGN_NAME, progress.sign)
+                    )
+                }
+            }
+            val topRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, 0, 0, 8)
+            }
+            topRow.addView(TextView(this).apply {
+                text = SignFeedback.displayGloss(progress.sign)
+                textSize = 13f
+                setTextColor(Palette.text)
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            topRow.addView(TextView(this).apply {
+                text = "ostatnio ${progress.lastAttempt.score} · najlepiej ${progress.bestScore} / 100"
+                textSize = 12f
+                setTextColor(Palette.textSecondary)
+            })
+            item.addView(topRow)
+
+            val track = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                weightSum = 1f
+                background = GradientDrawable().apply {
+                    setColor(Palette.tint)
+                    cornerRadius = 8f
+                }
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 12)
+            }
+            if (progress.bestScore > 0) {
+                track.addView(View(this).apply {
+                    background = GradientDrawable().apply {
+                        setColor(Palette.primary)
+                        cornerRadius = 8f
+                    }
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, progress.bestScore / 100f)
+                })
+            }
+            item.addView(track)
+            card.addView(item)
+
+            if (index < practicedSigns.lastIndex) {
+                card.addView(View(this).apply {
+                    setBackgroundColor(Palette.border)
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+                })
+            }
+        }
+
+        parent.addView(card)
     }
 
     private fun barBgView(v: View): View = v

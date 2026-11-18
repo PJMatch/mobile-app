@@ -1,10 +1,10 @@
 package com.example.pjm_match
 
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
+import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -17,17 +17,13 @@ class SignResultsActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
 
-        val signName = intent.getStringExtra(EXTRA_SIGN_NAME) ?: "Dzień dobry"
-        val score = intent.getIntExtra(EXTRA_SCORE, 88)
-        val stars = intent.getStringExtra(EXTRA_STARS) ?: "(Bardzo dobrze!)"
-        
-        val tempoText = intent.getStringExtra(EXTRA_TEMPO) ?: "W normie (1.2s · Tempo zbliżone do wzorca)"
-        val fluencyText = intent.getStringExtra(EXTRA_FLUENCY) ?: "Wysoka płynność (94% · Brak gwałtownych szarpnięć)"
-        val precisionText = intent.getStringExtra(EXTRA_PRECISION) ?: "Precyzyjne ułożenie dłoni (90% zgodności pozycji)"
-        val trajectoryText = intent.getStringExtra(EXTRA_TRAJECTORY) ?: "Odległość DTW: 0.284 · Pełny, dokończony ruch"
-        val orientationText = intent.getStringExtra(EXTRA_ORIENTATION) ?: "Orientacja dłoni skierowana prawidłowo do przodu"
-        val asymmetryText = intent.getStringExtra(EXTRA_ASYMMETRY) ?: "Ruch oburęczny zsynchronizowany symetrycznie"
-        val jerkText = intent.getStringExtra(EXTRA_JERK) ?: "Gładka pochodna przyspieszenia (Niski wskaźnik Jerk)"
+        val signName = intent.getStringExtra(EXTRA_SIGN_NAME) ?: run { finish(); return }
+        val progress = SignPracticeStore.progress(this, signName) ?: run {
+            toast("Nagraj znak, aby zobaczyć wyniki")
+            finish()
+            return
+        }
+        val attempt = progress.lastAttempt
 
         val scrollView = ScrollView(this).apply {
             setBackgroundColor(Palette.background)
@@ -107,79 +103,43 @@ class SignResultsActivity : BaseActivity() {
         }
 
         val scoreBadge = TextView(this).apply {
-            text = "$score / 100 pkt"
+            text = "${attempt.score} / 100 pkt"
             textSize = 36f
             setTextColor(Palette.accentStrong)
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
         val starsLabel = TextView(this).apply {
-            text = "Ocena: $stars"
+            text = "Ocena: ${SignFeedback.rating(attempt.score)}"
             textSize = 16f
             setTextColor(Palette.onPrimary)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 8, 0, 0)
         }
 
+        val historyLabel = TextView(this).apply {
+            text = "Najlepszy wynik: ${progress.bestScore} / 100 · Próby: ${progress.attempts}"
+            textSize = 12f
+            setTextColor(Palette.heroSubtext)
+            setPadding(0, 8, 0, 0)
+        }
+
         heroCard.addView(signLabel)
         heroCard.addView(scoreBadge)
         heroCard.addView(starsLabel)
+        heroCard.addView(historyLabel)
         rootLayout.addView(heroCard)
 
-        // 3. Section Title
-        val sectionTitle = TextView(this).apply {
-            text = "Szczegółowa analiza wskaźników:"
-            textSize = 18f
-            setTextColor(Palette.text)
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setPadding(0, 0, 0, 20)
+        if (attempt.predictions.isNotEmpty()) {
+            rootLayout.addView(sectionTitle("Co zobaczył model:"))
+            rootLayout.addView(modelCard(attempt))
         }
-        rootLayout.addView(sectionTitle)
 
-        // 4. Metric Items
-        val metricsList = listOf(
-            Triple("1. Tempo i Czas Trwania", tempoText, Palette.accent),
-            Triple("2. Płynność Ruchu", fluencyText, Palette.primary),
-            Triple("3. Precyzja Ułożenia Dłoni", precisionText, Palette.primary),
-            Triple("4. Trajektoria Ruchu (DTW / Fréchet)", trajectoryText, Palette.primary),
-            Triple("5. Orientacja Dłoni", orientationText, Palette.primary),
-            Triple("6. Asymetria Prędkości Oburęcznej", asymmetryText, Palette.primary),
-            Triple("7. Gładkość Ruchu (Pochodna Jerk)", jerkText, Palette.accent)
-        )
-
-        metricsList.forEach { (title, detail, accentColor) ->
-            val metricCardBg = GradientDrawable().apply {
-                setColor(Palette.surface)
-                setStroke(2, Palette.border)
-                cornerRadius = 32f
+        if (attempt.metrics.isNotEmpty()) {
+            rootLayout.addView(sectionTitle("Szczegółowa analiza ruchu:"))
+            attempt.metrics.forEachIndexed { index, metric ->
+                rootLayout.addView(infoCard("${index + 1}. ${metric.title}", metric.detail))
             }
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                background = metricCardBg
-                setPadding(36, 28, 36, 28)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { bottomMargin = 16 }
-            }
-
-            val cardTitle = TextView(this).apply {
-                text = title
-                textSize = 14f
-                setTextColor(accentColor)
-                setTypeface(null, android.graphics.Typeface.BOLD)
-            }
-
-            val cardDetail = TextView(this).apply {
-                text = detail
-                textSize = 13f
-                setTextColor(Palette.textSecondary)
-                setPadding(0, 6, 0, 0)
-            }
-
-            card.addView(cardTitle)
-            card.addView(cardDetail)
-            rootLayout.addView(card)
         }
 
         // 5. Interactive Options (Retry, Go to Lessons, Technical Radar)
@@ -270,16 +230,103 @@ class SignResultsActivity : BaseActivity() {
         setContentView(scrollView)
     }
 
+    private fun sectionTitle(title: String) = TextView(this).apply {
+        text = title
+        textSize = 18f
+        setTextColor(Palette.text)
+        setTypeface(null, android.graphics.Typeface.BOLD)
+        setPadding(0, 0, 0, 20)
+    }
+
+    private fun cardContainer() = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        background = GradientDrawable().apply {
+            setColor(Palette.surface)
+            setStroke(2, Palette.border)
+            cornerRadius = 32f
+        }
+        setPadding(36, 28, 36, 28)
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { bottomMargin = 16 }
+    }
+
+    private fun infoCard(title: String, detail: String) = cardContainer().apply {
+        addView(TextView(this@SignResultsActivity).apply {
+            text = title
+            textSize = 14f
+            setTextColor(Palette.primary)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+        addView(TextView(this@SignResultsActivity).apply {
+            text = detail
+            textSize = 13f
+            setTextColor(Palette.textSecondary)
+            setPadding(0, 6, 0, 0)
+        })
+    }
+
+    private fun modelCard(attempt: SignAttempt) = cardContainer().apply {
+        addView(TextView(this@SignResultsActivity).apply {
+            text = SignFeedback.summary(attempt)
+            textSize = 14f
+            setTextColor(Palette.text)
+            setPadding(0, 0, 0, 20)
+        })
+        attempt.predictions.take(TOP_PREDICTIONS).forEach { prediction ->
+            addView(predictionRow(prediction, isTarget = prediction.gloss == attempt.sign))
+        }
+    }
+
+    private fun predictionRow(prediction: SignPrediction, isTarget: Boolean) = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(0, 10, 0, 10)
+        val color = if (isTarget) Palette.primary else Palette.accent
+
+        val header = LinearLayout(this@SignResultsActivity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, 8)
+        }
+        header.addView(TextView(this@SignResultsActivity).apply {
+            text = SignFeedback.displayGloss(prediction.gloss) + if (isTarget) " (ćwiczony znak)" else ""
+            textSize = 13f
+            setTextColor(Palette.text)
+            if (isTarget) setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        header.addView(TextView(this@SignResultsActivity).apply {
+            text = SignFeedback.percent(prediction.confidence)
+            textSize = 13f
+            setTextColor(color)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+        addView(header)
+
+        val track = LinearLayout(this@SignResultsActivity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            weightSum = 1f
+            background = GradientDrawable().apply {
+                setColor(Palette.tint)
+                cornerRadius = 8f
+            }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 12)
+        }
+        if (prediction.confidence > 0f) {
+            track.addView(View(this@SignResultsActivity).apply {
+                background = GradientDrawable().apply {
+                    setColor(color)
+                    cornerRadius = 8f
+                }
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, prediction.confidence.coerceIn(0f, 1f))
+            })
+        }
+        addView(track)
+    }
+
     companion object {
+        private const val TOP_PREDICTIONS = 3
         const val EXTRA_SIGN_NAME = "extra_sign_name"
-        const val EXTRA_SCORE = "extra_score"
-        const val EXTRA_STARS = "extra_stars"
-        const val EXTRA_TEMPO = "extra_tempo"
-        const val EXTRA_FLUENCY = "extra_fluency"
-        const val EXTRA_PRECISION = "extra_precision"
-        const val EXTRA_TRAJECTORY = "extra_trajectory"
-        const val EXTRA_ORIENTATION = "extra_orientation"
-        const val EXTRA_ASYMMETRY = "extra_asymmetry"
-        const val EXTRA_JERK = "extra_jerk"
     }
 }

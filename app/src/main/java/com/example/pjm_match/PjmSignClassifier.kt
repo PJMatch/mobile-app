@@ -34,7 +34,11 @@ class PjmSignClassifier(context: Context, supportedGlosses: Collection<String>) 
         allowedIndices = labels.indices.filter { labels[it] in allowedGlosses }
     }
 
-    fun classify(clip: List<Array<FloatArray>>): SignPrediction {
+    fun recognizes(gloss: String): Boolean = allowedIndices.any { labels[it] == gloss }
+
+    fun classify(clip: List<Array<FloatArray>>): SignPrediction = rank(clip).first()
+
+    fun rank(clip: List<Array<FloatArray>>): List<SignPrediction> {
         require(clip.size in MIN_FRAMES..MAX_FRAMES)
         val vertices = PjmLandmarks.TOTAL_V
         val input = FloatBuffer.allocate(CHANNELS * clip.size * vertices)
@@ -52,9 +56,10 @@ class PjmSignClassifier(context: Context, supportedGlosses: Collection<String>) 
             session.run(mapOf(session.inputNames.first() to tensor)).use { result ->
                 @Suppress("UNCHECKED_CAST")
                 val probabilities = (result[0].value as Array<FloatArray>)[0]
-                val best = allowedIndices.maxBy { probabilities[it] }
                 val allowedTotal = allowedIndices.sumOf { probabilities[it].toDouble() }.toFloat()
-                return SignPrediction(labels[best], probabilities[best] / allowedTotal)
+                return allowedIndices
+                    .map { SignPrediction(labels[it], probabilities[it] / allowedTotal) }
+                    .sortedByDescending { it.confidence }
             }
         }
     }
