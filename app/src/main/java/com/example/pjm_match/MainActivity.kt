@@ -30,11 +30,14 @@ class MainActivity : BaseActivity() {
     private lateinit var greeting: android.widget.TextView
     private lateinit var profileInitial: android.widget.TextView
     private lateinit var goalContainer: LinearLayout
+    private lateinit var statsContainer: LinearLayout
 
     override fun onResume() {
         super.onResume()
         greeting.text = "Cześć, ${AccountProfile.name(this)}!"
         profileInitial.text = AccountProfile.initial(this)
+        statsContainer.removeAllViews()
+        statsContainer.place(statsRow())
         goalContainer.removeAllViews()
         goalContainer.place(dailyGoalCard())
     }
@@ -47,7 +50,7 @@ class MainActivity : BaseActivity() {
     private fun render() {
         scaffold(Tab.START) {
             place(header())
-            place(statsRow(), top = 24)
+            statsContainer = place(vertical { place(statsRow()) }, top = 24)
             goalContainer = place(vertical { place(dailyGoalCard()) }, top = 16)
             place(sectionTitle("Czas na kolejny gest"), top = 32, bottom = 14)
             place(lessonHero())
@@ -72,8 +75,8 @@ class MainActivity : BaseActivity() {
     }
 
     private fun statsRow(): LinearLayout = horizontal {
-        place(statTile(Icons.startFlame, Palette.accent, Palette.accentTint, "${LearnerStats.streakDays} dni", "Twoja seria", Palette.accent), 0, 88, 1f, end = 8)
-        place(statTile(Icons.startZap, Palette.primary, Palette.tint, "${LearnerStats.totalXp} XP", "Łącznie", Palette.textSecondary), 0, 88, 1f, start = 8)
+        place(statTile(Icons.startFlame, Palette.accent, Palette.accentTint, "${LearningStatistics.streak()} dni", "Twoja seria", Palette.accent), 0, 88, 1f, end = 8)
+        place(statTile(Icons.startZap, Palette.primary, Palette.tint, "${LearningStatistics.totalXp()} XP", "Łącznie", Palette.textSecondary), 0, 88, 1f, start = 8)
     }
 
     private fun statTile(iconSpec: IconSpec, iconColor: Int, background: Int, value: String, caption: String, captionColor: Int) = horizontal {
@@ -88,7 +91,7 @@ class MainActivity : BaseActivity() {
 
     private fun dailyGoalCard(): LinearLayout = card {
         val goal = DailyGoalSettings.get(this@MainActivity)
-        val today = LearnerStats.todayXp
+        val today = LearningStatistics.xpOn(Date())
         place(horizontal {
             place(icon(Icons.startTarget, Palette.primary), WRAP, WRAP, end = 12)
             place(label("Twój dzienny cel", 18f, Palette.text, 700), 0, WRAP, 1f)
@@ -105,7 +108,6 @@ class MainActivity : BaseActivity() {
         pad(22, 24)
         val lesson = Curriculum.currentLesson
         val topic = Curriculum.currentTopic
-        val answered = Curriculum.lessonQuestions.size - 1
         place(horizontal {
             gravity = Gravity.TOP
             place(vertical {
@@ -121,9 +123,8 @@ class MainActivity : BaseActivity() {
         })
         place(horizontal {
             place(label(lesson.title, 15f, Palette.onPrimary, 500), 0, WRAP, 1f)
-            place(label("$answered / ${Curriculum.lessonQuestions.size} pytań", 15f, Palette.heroSubtext, 700), WRAP, WRAP)
+            place(label("${Curriculum.lessonQuestions.size} pytań", 15f, Palette.heroSubtext, 700), WRAP, WRAP)
         }, top = 22)
-        place(progressBar(answered.toFloat() / Curriculum.lessonQuestions.size, Palette.accentStrong, Palette.heroTrack), MATCH, 6, top = 10)
         place(ActionButton(context, Palette.heroButtonText).apply {
             background = roundedRect(Palette.surface, 18)
             setContent("Kontynuuj lekcję", Icons.startArrowRight)

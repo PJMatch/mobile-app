@@ -29,6 +29,7 @@ class ProfileActivity : BaseActivity() {
     private lateinit var goalSummary: android.widget.TextView
 
     private var learningContainer: LinearLayout? = null
+    private lateinit var statsContainer: LinearLayout
     
     override fun onResume() {
         super.onResume()
@@ -36,6 +37,8 @@ class ProfileActivity : BaseActivity() {
         profileInitial.text = AccountProfile.initial(this)
         goalSummary.text = "${DailyGoalSettings.get(this)} XP dziennie"
         renderLearning()
+        statsContainer.removeAllViews()
+        statsContainer.place(profileStats())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,11 +88,13 @@ class ProfileActivity : BaseActivity() {
             setBackgroundColor(Palette.border)
         }, MATCH, 1, top = 18, bottom = 18)
 
-        place(horizontal {
-            place(statCol(Icons.startFlame, Palette.accent, "${LearnerStats.streakDays} dni", "Seria"), 0, WRAP, 1f)
-            place(statCol(Icons.startZap, Palette.primary, "${LearnerStats.totalXp}", "Łącznie XP"), 0, WRAP, 1f)
-            place(statCol(Icons.profileBook, Palette.primary, "${Curriculum.currentTopic.completedLessons}", "Lekcje"), 0, WRAP, 1f)
-        })
+        statsContainer = place(vertical { place(profileStats()) })
+    }
+
+    private fun profileStats(): LinearLayout = horizontal {
+        place(statCol(Icons.startFlame, Palette.accent, "${LearningStatistics.streak()} dni", "Seria"), 0, WRAP, 1f)
+        place(statCol(Icons.startZap, Palette.primary, "${LearningStatistics.totalXp()}", "Łącznie XP"), 0, WRAP, 1f)
+        place(statCol(Icons.profileBook, Palette.primary, "${LearningStatistics.completedCount()}", "Lekcje"), 0, WRAP, 1f)
     }
 
     private fun statCol(iconSpec: IconSpec, iconColor: Int, value: String, caption: String): LinearLayout = vertical {

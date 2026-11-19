@@ -16,7 +16,8 @@ class DailyGoalActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        selectedGoal = savedInstanceState?.getInt("selected_goal") ?: DailyGoalSettings.get(this)
+        selectedGoal = savedInstanceState?.getInt("selected_goal")
+            ?.takeIf { it in DailyGoalSettings.options } ?: DailyGoalSettings.get(this)
         scaffold(Tab.PROFILE, footer = {
             place(primaryButton("Zapisz zmiany") {
                 DailyGoalSettings.save(this@DailyGoalActivity, selectedGoal)
@@ -41,8 +42,8 @@ class DailyGoalActivity : BaseActivity() {
                 place(label("Twój obecny cel: ${DailyGoalSettings.get(this@DailyGoalActivity)} XP dziennie", 14f, Palette.primary, 500), 0, WRAP, 1f)
             }, top = 20)
             place(label("Wybierz swój cel", 18f, Palette.text, 700), top = 24, bottom = 16)
-            val titles = listOf("Na spokojnie", "Regularnie", "Ambitnie", "Intensywnie")
-            val descriptions = listOf("20 XP dziennie", "50 XP dziennie", "100 XP dziennie", "150 XP dziennie")
+            val titles = listOf("Regularnie", "Ambitnie", "Intensywnie")
+            val descriptions = listOf("50 XP dziennie", "100 XP dziennie", "150 XP dziennie")
             DailyGoalSettings.options.forEachIndexed { index, xp ->
                 place(goalOption(xp, titles[index], descriptions[index]), top = if (index == 0) 0 else 12)
             }

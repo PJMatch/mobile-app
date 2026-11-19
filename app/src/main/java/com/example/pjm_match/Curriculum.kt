@@ -28,13 +28,11 @@ data class LessonQuestion(
 )
 
 object Curriculum {
-    const val XP_PER_ANSWER = 10
-
     val currentTopic = Topic(
         title = "Powitania",
         icon = Icons.pathHand,
         lessonCount = 5,
-        completedLessons = 2,
+        completedLessons = 0,
         availability = "",
         unlocked = true,
     )
@@ -42,9 +40,9 @@ object Curriculum {
     val currentTopicLabel = "TEMAT 01 · PODSTAWY"
 
     val pathLessons = listOf(
-        PathLesson("Pierwsze „cześć”", LessonStatus.DONE, "Ukończono · 3 znaki"),
-        PathLesson("Dzień dobry", LessonStatus.DONE, "Ukończono · 4 znaki"),
-        PathLesson("Uprzejme słowa", LessonStatus.CURRENT, "Lekcja 3 · 4 / 5 pytań"),
+        PathLesson("Pierwsze „cześć”", LessonStatus.LOCKED, "W przygotowaniu"),
+        PathLesson("Dzień dobry", LessonStatus.LOCKED, "W przygotowaniu"),
+        PathLesson("Uprzejme słowa", LessonStatus.CURRENT, "Quiz · 5 pytań"),
         PathLesson("Do zobaczenia", LessonStatus.LOCKED, "Ukończ poprzednią lekcję"),
         PathLesson("Mała rozmowa", LessonStatus.LOCKED, "Finał tematu"),
     )
@@ -93,11 +91,3 @@ object Curriculum {
     }
 }
 
-object LearnerStats {
-    const val greetingName = "Aniu"
-    const val initial = "A"
-    const val streakDays = 7
-    const val totalXp = 240
-    const val todayXp = 40
-    const val dailyGoalXp = 50
-}

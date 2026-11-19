@@ -37,6 +37,10 @@ class LearningPathActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+    }
+
+    override fun onResume() {
+        super.onResume()
         scaffold(Tab.LEARN) {
             place(horizontal {
                 gravity = Gravity.TOP
@@ -44,7 +48,7 @@ class LearningPathActivity : BaseActivity() {
                     place(eyebrow("Polski język migowy", Palette.primary))
                     place(screenTitle("Gest po geście"), top = 6)
                 }, 0, WRAP, 1f)
-                place(pill("${LearnerStats.streakDays} dni", Palette.accent, Palette.accentTint, Icons.pathFlame), WRAP, WRAP, top = 18)
+                place(pill("${LearningStatistics.streak()} dni", Palette.accent, Palette.accentTint, Icons.pathFlame), WRAP, WRAP, top = 18)
             })
             place(topicCard(), top = 24)
             place(path(), top = 24)
@@ -56,15 +60,16 @@ class LearningPathActivity : BaseActivity() {
 
     private fun topicCard(): LinearLayout = card(background = Palette.tint, border = Palette.tint) {
         val topic = Curriculum.currentTopic
+        val completed = LearningStatistics.completedIn(topic.title).coerceAtMost(topic.lessonCount)
         place(horizontal {
             place(icon(topic.icon, Palette.primary), WRAP, WRAP, end = 16)
             place(vertical {
                 place(eyebrow(Curriculum.currentTopicLabel, Palette.primary))
                 place(label(topic.title, 28f, Palette.text, 800), top = 2)
             }, 0, WRAP, 1f)
-            place(label("${topic.completedLessons} / ${topic.lessonCount}", 17f, Palette.primary, 700), WRAP, WRAP)
+            place(label("${LearningStatistics.completedIn(topic.title).coerceAtMost(topic.lessonCount)} / ${topic.lessonCount}", 17f, Palette.primary, 700), WRAP, WRAP)
         })
-        place(progressBar(topic.completedLessons.toFloat() / topic.lessonCount, track = Palette.surface), MATCH, 10, top = 18)
+        place(progressBar(completed.toFloat() / topic.lessonCount, track = Palette.surface), MATCH, 10, top = 18)
     }
 
     private fun path(): LearningPathLayout = LearningPathLayout(this).apply {
@@ -119,7 +124,7 @@ class LearningPathActivity : BaseActivity() {
         place(iconTile(topic.icon, Palette.primary, Palette.tint, radiusDp = 14), 52, 52)
         place(vertical {
             place(label(topic.title, 19f, Palette.text, 700))
-            place(label("${topic.completedLessons} / ${topic.lessonCount} lekcji · ${topic.availability}", 13.5f, Palette.textSecondary, 600), top = 3)
+            place(label("${LearningStatistics.completedIn(topic.title).coerceAtMost(topic.lessonCount)} / ${topic.lessonCount} lekcji · ${topic.availability}", 13.5f, Palette.textSecondary, 600), top = 3)
         }, 0, WRAP, 1f, start = 16, end = 12)
         val trailing = if (topic.unlocked) icon(Icons.pathArrowRight, Palette.primary) else icon(Icons.pathLockSmall, Palette.textSecondary)
         place(trailing, WRAP, WRAP)
