@@ -10,6 +10,8 @@ import android.widget.TextView
 import com.example.pjm_match.ui.IconSpec
 import com.example.pjm_match.ui.Palette
 import com.example.pjm_match.ui.iconTile
+import com.example.pjm_match.ui.horizontal
+import com.example.pjm_match.ui.icon
 
 class StatsActivity : BaseActivity() {
 
@@ -462,14 +464,30 @@ class StatsActivity : BaseActivity() {
             }
 
             val badgesCount = TextView(this@StatsActivity).apply {
-                text = "2 / 6"
+                text = Achievements.countLabel
                 textSize = 13f
                 setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
             }
 
             badgesHeaderLayout.addView(badgesTitle)
-            badgesHeaderLayout.addView(badgesCount)
+            badgesHeaderLayout.addView(horizontal {
+                gravity = Gravity.CENTER_VERTICAL
+                minimumHeight = (48 * resources.displayMetrics.density).toInt()
+                val padding = (8 * resources.displayMetrics.density).toInt()
+                setPadding(padding, 0, padding, 0)
+                contentDescription = "Zobacz wszystkie osiągnięcia, zdobyte ${Achievements.countLabel}"
+                addView(badgesCount)
+                addView(icon(Icons.startArrowUpRight, Palette.accent).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        (20 * resources.displayMetrics.density).toInt(),
+                        (20 * resources.displayMetrics.density).toInt(),
+                    ).apply { marginStart = padding }
+                })
+                setOnClickListener {
+                    startActivity(Intent(this@StatsActivity, AchievementsActivity::class.java))
+                }
+            })
             addView(badgesHeaderLayout)
 
             val badgesRow = LinearLayout(this@StatsActivity).apply {
@@ -480,18 +498,18 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 24 }
             }
 
-            val badge1 = createBadgeItem(Icons.pathHand, Palette.primary, "Pierwszy gest", "Pierwsza lekcja", Palette.tint, Palette.text, true)
-            badge1.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-
-            val badge2 = createBadgeItem(Icons.startFlame, Palette.accent, "7 dni razem", "Tydzień nauki", Palette.accentTint, Palette.text, true)
-            badge2.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-
-            val badge3 = createBadgeItem(Icons.pathLock, Palette.textMuted, "Mistrz liczb", "Jeszcze przed Tobą", Palette.tint, Palette.textMuted, false)
-            badge3.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-
-            badgesRow.addView(badge1)
-            badgesRow.addView(badge2)
-            badgesRow.addView(badge3)
+            Achievements.all.take(3).forEach { achievement ->
+                val badge = createBadgeItem(
+                    if (achievement.isUnlocked) achievement.icon else Icons.pathLock,
+                    if (achievement.isUnlocked) Palette.primary else Palette.textMuted,
+                    achievement.title,
+                    Palette.tint,
+                    if (achievement.isUnlocked) Palette.text else Palette.textMuted,
+                    achievement.isUnlocked,
+                )
+                badge.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                badgesRow.addView(badge)
+            }
 
             addView(badgesRow)
         }
@@ -545,7 +563,7 @@ class StatsActivity : BaseActivity() {
         }
     }
 
-    private fun createBadgeItem(iconSpec: IconSpec, iconColorInt: Int, title: String, subtitle: String, circleBgInt: Int, textColorInt: Int, isUnlocked: Boolean): LinearLayout {
+    private fun createBadgeItem(iconSpec: IconSpec, iconColorInt: Int, title: String, circleBgInt: Int, textColorInt: Int, isUnlocked: Boolean): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
@@ -569,16 +587,8 @@ class StatsActivity : BaseActivity() {
                 setPadding(0, 10, 0, 2)
             }
 
-            val subtitleView = TextView(this@StatsActivity).apply {
-                text = subtitle
-                textSize = 10f
-                setTextColor(Palette.textSecondary)
-                gravity = Gravity.CENTER
-            }
-
             addView(iconView)
             addView(titleView)
-            addView(subtitleView)
         }
     }
 }
