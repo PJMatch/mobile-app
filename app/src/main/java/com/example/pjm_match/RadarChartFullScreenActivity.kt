@@ -92,15 +92,16 @@ class RadarChartFullScreenActivity : BaseActivity() {
             )
         }
         
-        fun updateRadarChartTextAndData(newText: String) {
+        val emptyMessage = TextView(this).apply {
+            text = "Brak danych o technice"
+            gravity = Gravity.CENTER
+            setTextColor(Palette.textSecondary)
+        }
+        fun updateRadarChartTextAndData(newText: String, start: java.util.Date, end: java.util.Date) {
             radarDateRange.text = newText
-            radarChartView.dataPoints = floatArrayOf(
-                (Math.random() * 0.4 + 0.5).toFloat(),
-                (Math.random() * 0.4 + 0.5).toFloat(),
-                (Math.random() * 0.4 + 0.5).toFloat(),
-                (Math.random() * 0.4 + 0.5).toFloat(),
-                (Math.random() * 0.4 + 0.5).toFloat()
-            )
+            val data = LearningStatistics.technique(start, end)
+            radarChartView.dataPoints = data ?: FloatArray(5)
+            emptyMessage.visibility = if (data == null) android.view.View.VISIBLE else android.view.View.GONE
         }
 
         val filterScroll = android.widget.HorizontalScrollView(this).apply {
@@ -156,7 +157,7 @@ class RadarChartFullScreenActivity : BaseActivity() {
                             val sdf = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
                             val startStr = sdf.format(java.util.Date(selection.first))
                             val endStr = sdf.format(java.util.Date(selection.second))
-                            updateRadarChartTextAndData("$startStr - $endStr")
+                            updateRadarChartTextAndData("$startStr - $endStr", java.util.Date(selection.first), java.util.Date(selection.second))
                             updateActiveFilter(index)
                         }
                         datePicker.show(supportFragmentManager, "date_picker")
@@ -169,7 +170,14 @@ class RadarChartFullScreenActivity : BaseActivity() {
                             3 -> "Ten miesiąc"
                             else -> ""
                         }
-                        updateRadarChartTextAndData(title)
+                        val calendar = java.util.Calendar.getInstance()
+                        val end = calendar.time
+                        when (index) {
+                            1 -> calendar.add(java.util.Calendar.DAY_OF_YEAR, -6)
+                            2 -> calendar.add(java.util.Calendar.DAY_OF_YEAR, -29)
+                            3 -> calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+                        }
+                        updateRadarChartTextAndData(title, calendar.time, end)
                     }
                 }
             }
@@ -181,7 +189,9 @@ class RadarChartFullScreenActivity : BaseActivity() {
         filterScroll.addView(filterRow)
         rootLayout.addView(filterScroll)
 
+        radarCard.addView(emptyMessage)
         radarCard.addView(radarChartView)
+        updateRadarChartTextAndData("Dzisiaj", java.util.Date(), java.util.Date())
         rootLayout.addView(radarCard)
         
         setContentView(rootLayout)

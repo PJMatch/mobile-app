@@ -29,7 +29,7 @@ class StatsActivity : BaseActivity() {
             }
 
             val titleTextView = TextView(this@StatsActivity).apply {
-                text = "Widać postępy!"
+                text = "Twoje statystyki"
                 textSize = 28f
                 setTextColor(Palette.text)
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -37,7 +37,7 @@ class StatsActivity : BaseActivity() {
             }
 
             val subtitleTextView = TextView(this@StatsActivity).apply {
-                text = "Każdy gest ma znaczenie. Tak trzymaj, Aniu."
+                text = "Każdy gest ma znaczenie."
                 textSize = 13f
                 setTextColor(Palette.textSecondary)
                 setPadding(0, 0, 0, 32)
@@ -75,7 +75,7 @@ class StatsActivity : BaseActivity() {
             }
 
             val bannerTitle = TextView(this@StatsActivity).apply {
-                text = "7 dni z rzędu"
+                text = "${LearningStatistics.streak()} dni z rzędu"
                 textSize = 22f
                 setTextColor(Palette.onPrimary)
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -83,7 +83,7 @@ class StatsActivity : BaseActivity() {
             }
 
             val bannerSub2 = TextView(this@StatsActivity).apply {
-                text = "Twój najlepszy wynik. Brawo!"
+                text = "Dni z aktywnością z rzędu"
                 textSize = 11f
                 setTextColor(Palette.heroSubtext)
             }
@@ -109,10 +109,10 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 16 }
             }
 
-            val card1 = createMetricCard("240 XP", "", "Łączne doświadczenie", Palette.accent)
+            val card1 = createMetricCard("${LearningStatistics.totalXp()} XP", "", "Łączne doświadczenie", Palette.accent)
             card1.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 8 }
 
-            val card2 = createMetricCard("2", "", "Ukończone lekcje", Palette.primary)
+            val card2 = createMetricCard("${LearningStatistics.completedCount()}", "", "Ukończone lekcje", Palette.primary)
             card2.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 8 }
 
             statsRow1.addView(card1)
@@ -126,10 +126,10 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 28 }
             }
 
-            val card3 = createMetricCard("38 min", "", "Czas nauki łącznie", Palette.primary)
+            val card3 = createMetricCard("${LearningStatistics.minutes()} min", "", "Czas nauki łącznie", Palette.primary)
             card3.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 8 }
 
-            val card4 = createMetricCard("92%", "", "Poprawne odpowiedzi", Palette.accent)
+            val card4 = createMetricCard(LearningStatistics.accuracy()?.let { "$it%" } ?: "—", "", "Poprawne próby", Palette.accent)
             card4.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 8 }
 
             statsRow2.addView(card3)
@@ -173,7 +173,7 @@ class StatsActivity : BaseActivity() {
             }
 
             val chartSubtitle = TextView(this@StatsActivity).apply {
-                text = "Dzisiaj (kliknij, by powiększyć)"
+                text = "Ostatnie 7 dni · kliknij, by powiększyć"
                 textSize = 11f
                 setTextColor(Palette.textSecondary)
                 setPadding(0, 2, 0, 0)
@@ -183,7 +183,7 @@ class StatsActivity : BaseActivity() {
             chartTitleLayout.addView(chartSubtitle)
 
             val chartXpText = TextView(this@StatsActivity).apply {
-                text = "240 XP"
+                text = "${(0..6).sumOf { offset -> LearningStatistics.xpOn(java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -offset) }.time) }} XP"
                 textSize = 15f
                 setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -202,18 +202,18 @@ class StatsActivity : BaseActivity() {
                 )
             }
 
-            val daysData = listOf(
-                Triple("Pn", "20", 20f / 50f),
-                Triple("Wt", "30", 30f / 50f),
-                Triple("Śr", "40", 40f / 50f),
-                Triple("Cz", "20", 20f / 50f),
-                Triple("Pt", "50", 50f / 50f),
-                Triple("So", "40", 40f / 50f),
-                Triple("Nd", "40", 40f / 50f)
-            )
+            val daysData = (6 downTo 0).map { offset ->
+                val date = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -offset) }.time
+                val label = java.text.SimpleDateFormat("EE", java.util.Locale.forLanguageTag("pl")).format(date)
+                label to LearningStatistics.xpOn(date)
+            }
+            val maxXp = daysData.maxOf { it.second }.coerceAtLeast(1)
 
-            for ((dayName, valueStr, ratio) in daysData) {
-                val isActive = (dayName == "Nd")
+            for ((index, day) in daysData.withIndex()) {
+                val (dayName, value) = day
+                val valueStr = value.toString()
+                val ratio = value.toFloat() / maxXp
+                val isActive = index == daysData.lastIndex
                 val barColumn = LinearLayout(this@StatsActivity).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
@@ -283,7 +283,7 @@ class StatsActivity : BaseActivity() {
             }
 
             val radarDateRange = TextView(this@StatsActivity).apply {
-                text = "Dzisiaj (kliknij, by powiększyć)"
+                text = "Dzisiaj · kliknij, by powiększyć"
                 textSize = 13f
                 setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -313,6 +313,10 @@ class StatsActivity : BaseActivity() {
                 )
             }
 
+            radarChartView.dataPoints = LearningStatistics.technique(java.util.Date(), java.util.Date()) ?: FloatArray(5)
+            if (LearningStatistics.technique(java.util.Date(), java.util.Date()) == null) {
+                radarCard.addView(TextView(this@StatsActivity).apply { text = "Brak danych o technice"; gravity = Gravity.CENTER; setTextColor(Palette.textSecondary) })
+            }
             radarCard.addView(radarChartView)
             addView(radarCard)
 
@@ -338,7 +342,7 @@ class StatsActivity : BaseActivity() {
             }
 
             val topicsCount = TextView(this@StatsActivity).apply {
-                text = "2 / 24 lekcje"
+                text = "${LearningStatistics.completedCount()} / 24 lekcje"
                 textSize = 13f
                 setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -358,13 +362,10 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 32 }
             }
 
-            val topics = listOf(
-                Pair("Powitania", "2 / 5" to 0.4f),
-                Pair("Liczby", "0 / 4" to 0.0f),
-                Pair("Rodzina", "0 / 5" to 0.0f),
-                Pair("Jedzenie", "0 / 4" to 0.0f),
-                Pair("Codzienne zwroty", "0 / 6" to 0.0f)
-            )
+            val topics = listOf("Powitania" to 5, "Liczby" to 4, "Rodzina" to 5, "Jedzenie" to 4, "Codzienne zwroty" to 6).map { (name, total) ->
+                val completed = LearningStatistics.completedIn(name).coerceAtMost(total)
+                name to ("$completed / $total" to completed.toFloat() / total)
+            }
 
             for ((index, topic) in topics.withIndex()) {
                 val (name, progInfo) = topic
@@ -462,7 +463,7 @@ class StatsActivity : BaseActivity() {
             }
 
             val badgesCount = TextView(this@StatsActivity).apply {
-                text = "2 / 6"
+                text = "${listOf(LearningStatistics.completedCount() > 0, LearningStatistics.streak() >= 7, LearningStatistics.completedIn("Liczby") >= 4).count { it }} / 3"
                 textSize = 13f
                 setTextColor(Palette.accent)
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -480,13 +481,13 @@ class StatsActivity : BaseActivity() {
                 ).apply { bottomMargin = 24 }
             }
 
-            val badge1 = createBadgeItem(Icons.pathHand, Palette.primary, "Pierwszy gest", "Pierwsza lekcja", Palette.tint, Palette.text, true)
+            val badge1 = createBadgeItem(Icons.pathHand, Palette.primary, "Pierwszy gest", "Pierwsza lekcja", Palette.tint, Palette.text, LearningStatistics.completedCount() > 0)
             badge1.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
-            val badge2 = createBadgeItem(Icons.startFlame, Palette.accent, "7 dni razem", "Tydzień nauki", Palette.accentTint, Palette.text, true)
+            val badge2 = createBadgeItem(Icons.startFlame, Palette.accent, "7 dni razem", "Tydzień nauki", Palette.accentTint, Palette.text, LearningStatistics.streak() >= 7)
             badge2.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
-            val badge3 = createBadgeItem(Icons.pathLock, Palette.textMuted, "Mistrz liczb", "Jeszcze przed Tobą", Palette.tint, Palette.textMuted, false)
+            val badge3 = createBadgeItem(Icons.pathLock, Palette.textMuted, "Mistrz liczb", "Ukończ liczby", Palette.tint, Palette.textMuted, LearningStatistics.completedIn("Liczby") >= 4)
             badge3.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
             badgesRow.addView(badge1)
@@ -584,7 +585,7 @@ class StatsActivity : BaseActivity() {
 }
 
 class RadarChartView(context: android.content.Context) : View(context) {
-    var dataPoints: FloatArray = floatArrayOf(0.75f, 0.8f, 0.6f, 0.9f, 0.85f)
+    var dataPoints: FloatArray = FloatArray(5)
         set(value) {
             field = value
             invalidate()

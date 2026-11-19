@@ -3,7 +3,7 @@ package com.example.pjm_match
 import android.content.Context
 
 object DailyGoalSettings {
-    val options = listOf(20, 50, 100, 150)
+    val options = listOf(50, 100, 150)
 
     fun get(context: Context): Int =
         context.getSharedPreferences("daily_goal", Context.MODE_PRIVATE)

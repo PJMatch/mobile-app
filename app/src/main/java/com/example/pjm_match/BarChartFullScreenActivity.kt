@@ -67,7 +67,7 @@ class BarChartFullScreenActivity : BaseActivity() {
         }
         
         val chartXpText = TextView(this).apply {
-            text = "240 XP"
+            text = "0 XP"
             textSize = 18f
             setTextColor(Palette.accent)
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -131,23 +131,32 @@ class BarChartFullScreenActivity : BaseActivity() {
         
         val dayNames = listOf("Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So")
         
-        fun updateChartData(newDateText: String, startDate: java.util.Date, endDate: java.util.Date, forceZero: Boolean = false) {
+        fun updateChartData(newDateText: String, startDate: java.util.Date, endDate: java.util.Date) {
             chartDateRange.text = newDateText
-            val diffInMillies = Math.abs(endDate.time - startDate.time)
-            val daysCount = java.util.concurrent.TimeUnit.DAYS.convert(diffInMillies, java.util.concurrent.TimeUnit.MILLISECONDS).toInt() + 1
+            val formatter = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            val cursor = java.util.Calendar.getInstance().apply { time = startDate; set(java.util.Calendar.HOUR_OF_DAY, 12) }
+            val dates = mutableListOf<java.util.Date>()
+            val endKey = formatter.format(endDate)
+            while (formatter.format(cursor.time) <= endKey) {
+                dates.add(cursor.time)
+                cursor.add(java.util.Calendar.DAY_OF_YEAR, 1)
+            }
+            val daysCount = dates.size.coerceAtLeast(1)
             
             barGraphLayout.removeAllViews()
             
             val numColumns = Math.min(daysCount, 7)
             
-            var currentTotalXp = 0
+            val bucketValues = (0 until numColumns).map { i ->
+                val start = i * dates.size / numColumns
+                val end = (i + 1) * dates.size / numColumns
+                dates.subList(start, end).sumOf { LearningStatistics.xpOn(it) }
+            }
+            val currentTotalXp = bucketValues.sum()
+            val maxXp = (bucketValues.maxOrNull() ?: 0).coerceAtLeast(1)
             
             if (daysCount == 1) {
-                val seed = (newDateText + "0").hashCode().toLong()
-                val random = java.util.Random(seed)
-                val hasData = if (forceZero) false else random.nextDouble() > 0.3
-                val value = if (hasData) (random.nextDouble() * 40 + 10).toInt() else 0
-                currentTotalXp = value
+                val value = currentTotalXp
                 
                 val singleDayContainer = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
@@ -188,13 +197,8 @@ class BarChartFullScreenActivity : BaseActivity() {
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
                     }
                     
-                    val seed = (newDateText + i.toString()).hashCode().toLong()
-                    val random = java.util.Random(seed)
-                    val hasData = if (forceZero) false else random.nextDouble() > 0.3
-                    val value = if (hasData) (random.nextDouble() * 40 + 10).toInt() else 0
-                    currentTotalXp += value
-                    
-                    val ratio = value / 50f
+                    val value = bucketValues[i]
+                    val ratio = value.toFloat() / maxXp
                     val valueStr = value.toString()
                     
                     val valView = TextView(this).apply {
@@ -337,7 +341,7 @@ class BarChartFullScreenActivity : BaseActivity() {
                             3 -> { 
                                 chartTitle.text = "Twój miesiąc"
                                 cal.set(java.util.Calendar.DAY_OF_MONTH, 1)
-                                updateChartData("Ten miesiąc", cal.time, today, forceZero = true) 
+                                updateChartData("Ten miesiąc", cal.time, today) 
                             }
                         }
                     }

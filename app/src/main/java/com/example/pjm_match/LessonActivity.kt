@@ -30,7 +30,6 @@ class LessonActivity : BaseActivity() {
 
     private val questions = Curriculum.lessonQuestions
     private var index = 0
-    private var earnedXp = 0
     private var answered = false
 
     private lateinit var progress: ProgressBarView
@@ -148,7 +147,6 @@ class LessonActivity : BaseActivity() {
         answered = true
         val question = questions[index]
         val correct = option == question.answer
-        if (correct) earnedXp += Curriculum.XP_PER_ANSWER
 
         optionViews.forEach { (text, view) ->
             val isAnswer = text == question.answer
@@ -163,9 +161,8 @@ class LessonActivity : BaseActivity() {
 
         showFeedback(question, correct)
         nextButton.isEnabled = true
-        val goal = DailyGoalSettings.get(this)
         footerNote.text = if (correct) {
-            "XP dodane! Twój dzienny cel: ${minOf(LearnerStats.todayXp + earnedXp, goal)} / $goal XP"
+            "Dobra odpowiedź!"
         } else {
             "Następnym razem się uda. Ćwiczenie czyni mistrza."
         }
@@ -184,7 +181,6 @@ class LessonActivity : BaseActivity() {
         feedback.place(horizontal {
             place(icon(if (correct) Icons.lessonFeedbackCheck else Icons.trInfo, if (correct) Palette.primary else Palette.accent), WRAP, WRAP, end = 12)
             place(label(if (correct) "Dokładnie tak!" else "Prawie!", 23f, Palette.text, 700), 0, WRAP, 1f)
-            if (correct) place(pill("+${Curriculum.XP_PER_ANSWER} XP", Palette.accent, Palette.accentTint, Icons.lessonZap), WRAP, WRAP)
         })
         val explanation = buildString {
             append(if (correct) "Ten znak oznacza „${question.answer}”." else "Ten znak oznacza „${question.answer}”. Obejrzyj nagranie jeszcze raz.")
@@ -197,7 +193,7 @@ class LessonActivity : BaseActivity() {
     private fun next() {
         if (!answered) return
         if (index == questions.lastIndex) {
-            toast("Lekcja ukończona! Zdobyte XP: $earnedXp", long = true)
+            toast("Quiz zakończony!", long = true)
             finish()
             return
         }
